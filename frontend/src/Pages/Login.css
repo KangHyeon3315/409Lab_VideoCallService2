@@ -1,0 +1,63 @@
+#LoginPage {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+}
+
+#LoginSection {
+    border: solid 1px gray;
+    border-radius: 50px;
+    width: 350px;
+    height: 400px;
+    padding-top: 3vh;
+    padding-bottom: 3vh;
+    padding-left: 3vw;
+    padding-right: 3vw;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background-color: white;
+}
+
+#LoginForm {
+    width: 90%;
+}
+
+#LoginForm table {
+    width: 100%;
+}
+
+.InputTr {
+    height: 60px;
+}
+
+.EmptyTr {
+    height: 20px;   
+}
+
+.LoginInput {
+    width: calc(100% - 30px);
+    height: 40px;
+    border: solid 1px black;
+    border-radius: 30px;
+    padding-left: 15px;
+    padding-right: 15px;
+}
+
+.Btn {
+    text-align: center;
+}
+
+#LoginBtn {
+    width: 100%;
+    height: 40px;
+    border: none;
+    border-radius: 30px;
+    background-color: cornflowerblue;
+    color: white;
+    font-weight: bold;
+}

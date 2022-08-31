@@ -1,0 +1,102 @@
+#listViewer {
+    width: 100%;
+    height: 100%;
+    border-right: solid 1px lightgray;
+
+    display: flex;
+    flex-direction: column;
+}
+
+#listWrap {
+    flex: 1;
+    max-height: calc(100vh - 50px - 60px); /* header 및 select 버튼 제외*/
+    display: flex;
+    flex-direction: column;
+
+    overflow-y: auto;
+}
+
+.listCell {
+    display: flex;
+    flex-direction: row;
+
+    height: 7vh;
+    border-bottom: solid 1px black;
+}
+
+.listCell:hover {
+    background-color: #AAAAAA22;
+}
+
+.selectedListCell {
+    display: flex;
+    flex-direction: row;
+
+    height: 7vh;
+    border-bottom: solid 1px black;
+    background-color: #AAAAAA33;
+}
+
+.listCellImg {
+    width: 7vh;
+    height: 7vh;
+
+    border: solid 1px lightgray;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.listCellInfo {
+    padding: 5px;
+    min-width: calc(100% - 7vh - 10px);
+    max-width: calc(100% - 7vh - 10px);
+
+    display: flex;
+    flex-direction: column;
+}
+
+.listCellTitle {
+    padding-bottom: 3px;
+    border-bottom: solid 1px lightgray;
+
+}
+
+.listCellComment {
+    flex: 1;
+    padding-top: 3px;
+
+    overflow-wrap: break-word;
+    overflow-y: hidden;
+}
+
+#listSelectWrap {
+    width: 100%;
+    height: 5vh;
+
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+
+    border-top: solid 1px lightgray;
+}
+
+.listSelectBtn {
+    flex: 1;
+
+    border: none;
+    background-color: #00000000;
+}
+
+.listIcon, .selectedListIcon {
+    width: 1.5vh;
+    height: 1.5vh;
+    padding: 1vh;
+    border-radius: 3vh;
+}
+
+.listIcon:hover, .selectedListIcon {
+    background-color: #44444444;
+}

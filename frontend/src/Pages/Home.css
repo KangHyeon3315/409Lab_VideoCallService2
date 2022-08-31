@@ -1,0 +1,38 @@
+#home {
+    height: 100vh;
+
+    display: flex;
+    flex-direction: column;
+}
+
+#homeBody {
+    flex: 1;
+    display: flex;
+    flex-direction: row;
+}
+
+#contentsWrap {
+    min-height: 100%;
+    min-width: 100%;
+
+    display: flex;
+    flex-direction: row;
+}
+
+#contents {
+    flex: 1;
+    min-height: 100%;
+
+    display: flex;
+    flex-direction: column;
+    text-align: center;
+    justify-content: center;
+}
+
+#itemList {
+    width: 400px;
+}
+
+#mobileItemList {
+    width: 100%;
+}
