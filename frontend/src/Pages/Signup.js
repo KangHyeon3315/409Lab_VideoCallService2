@@ -15,7 +15,7 @@ function Signup() {
     const onSignup = (e) => {
         e.preventDefault();
                 
-        axios.post('/auth/signup', null, {
+        axios.post('/api/auth/signup', null, {
             params: {
                 username: userId,
                 password: userPw,

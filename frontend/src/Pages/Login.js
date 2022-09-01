@@ -12,7 +12,7 @@ function Login() {
     const onLogin = (e) => {
         e.preventDefault();
                 
-        axios.post('/auth/signin', null, {
+        axios.post('/api/auth/signin', null, {
             params: {
                 username: userId,
                 password: userPw,
@@ -20,6 +20,7 @@ function Login() {
         }).then(res => {
             if(res.status === 200 && res.data.result === true) {
                 sessionStorage.setItem("token", res.data.token)
+                
                 navigate('/')
             } else if(res.status === 200){
                 alert(res.data.msg)

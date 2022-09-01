@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.*;
 
 @RestController
-@RequestMapping("/auth")
+@RequestMapping("/api/auth")
 @RequiredArgsConstructor
 public class AuthController {
     private final PasswordEncoder passwordEncoder;
@@ -52,6 +52,8 @@ public class AuthController {
         roles.add(user.getRole().getKey());
 
         String token = jwtTokenProvider.createToken(user.getUsername(), roles);
+
+        System.out.println(token);
         return new SigninRes(true, null, token);
     }
 }
