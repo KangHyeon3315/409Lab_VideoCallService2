@@ -20,8 +20,11 @@
     display: flex;
     flex-direction: row;
 
-    height: 7vh;
-    border-bottom: solid 1px black;
+    margin: 5px;
+
+    height: calc(7vh + 2px);
+    border: solid 1px lightgray;
+    border-radius: 15px;
 }
 
 .listCell:hover {
@@ -32,16 +35,21 @@
     display: flex;
     flex-direction: row;
 
-    height: 7vh;
-    border-bottom: solid 1px black;
+    margin: 5px;
+
+    height: calc(7vh + 2px);
+    border-bottom: solid 1px lightgray;
     background-color: #AAAAAA33;
 }
 
 .listCellImg {
-    width: 7vh;
-    height: 7vh;
+    width: 6vh;
+    height: 6vh;
+    margin: 0.5vh;
 
     border: solid 1px lightgray;
+    
+    border-radius: 5vh;
 
     display: flex;
     flex-direction: column;
@@ -50,9 +58,9 @@
 }
 
 .listCellInfo {
-    padding: 5px;
-    min-width: calc(100% - 7vh - 10px);
-    max-width: calc(100% - 7vh - 10px);
+    padding: 10px;
+    min-width: calc(100% - 7vh - 20px);
+    max-width: calc(100% - 7vh - 20px);
 
     display: flex;
     flex-direction: column;

@@ -8,22 +8,29 @@ import './Home.css';
 function Home({ match }) {
     const navigate = useNavigate();
     const [isMobileMode, setMobileMode] = useState(false);
+    const [friends, setFriends] = useState([]);
+    const [rooms, setRooms] = useState([]);
 
     useEffect(() => {
         const token = sessionStorage.getItem('token');
         if (token === null || token === '') {
             navigate('/signin')
             return;
-        } 
+        }
 
         axios.get("/api/user/info", {
-            headers: { "X-AUTH-TOKEN": sessionStorage.getItem('token'), }
+            headers: { "X-AUTH-TOKEN": sessionStorage.getItem('token'), },
+            params: { username: sessionStorage.getItem('username') }
         })
-        .then(res => {
-            if (res.status === 403) navigate('/signin')
+            .then(res => {
+                if (res.status === 403) navigate('/signin')
 
-            console.log(res)
-        })
+                setFriends(res.data.friendsList)
+                setRooms(res.data.roomList)
+            })
+            .catch(ex => {
+                if (ex.response.status === 403) navigate('/signin')
+            })
 
         onResize();
         window.addEventListener('resize', onResize);
@@ -42,18 +49,19 @@ function Home({ match }) {
         }
     }
 
+
     let contents;
     if (isMobileMode) {
         contents = (
             <div id='mobileItemList'>
-                <ListViewer />
+                <ListViewer friends={friends} rooms={rooms}/>
             </div>
         )
     } else {
         contents = (
             <div id="contentsWrap">
                 <div id='itemList'>
-                    <ListViewer />
+                    <ListViewer friends={friends} rooms={rooms}/>
                 </div>
                 <div id='contents'>
                     채팅방을 선택하세요
@@ -64,7 +72,7 @@ function Home({ match }) {
 
     return (
         <div id="home">
-            <Header/>
+            <Header />
             <div id="homeBody">
                 {contents}
             </div>

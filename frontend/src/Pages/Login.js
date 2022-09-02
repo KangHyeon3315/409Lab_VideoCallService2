@@ -20,6 +20,7 @@ function Login() {
         }).then(res => {
             if(res.status === 200 && res.data.result === true) {
                 sessionStorage.setItem("token", res.data.token)
+                sessionStorage.setItem("username", userId)
                 
                 navigate('/')
             } else if(res.status === 200){

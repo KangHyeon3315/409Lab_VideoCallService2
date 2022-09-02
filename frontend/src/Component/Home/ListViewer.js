@@ -22,39 +22,39 @@ function ListCell(props) {
     )
 }
 
-function ListViewer() {
+function ListViewer(props) {
     const [selectedCategory, setCategory] = useState("chat");
+
+    let ListCells = [];
+    if(selectedCategory === "profile" && props.friends) {
+        props.friends.forEach(friendInfo => {
+            ListCells.push(
+                <ListCell
+                    key={friendInfo.id}
+                    title={friendInfo.nickname}
+                    comment={friendInfo.email}
+                    chatId={friendInfo.chatId}
+                />
+            )
+        }) 
+    } else if(selectedCategory === "chat" && props.rooms) {
+        props.rooms.forEach(roomInfo => {
+            // TODO if room selected => selected props is true
+            ListCells.push(
+                <ListCell
+                    key={roomInfo.chatId}
+                    title={roomInfo.title}
+                    comment={""}
+                    chatId={roomInfo.chatId}
+                />
+            )
+        }) 
+    }
 
     return (
         <div id="listViewer">
             <div id="listWrap">
-                <ListCell title="Test1Test1Test1Test1Test1Test1Test1Test1Test1" comment="Test" selected={true}/>
-                <ListCell title="Test1" comment="Test1Test1Test1Test1Test1Test1Test1Test1Test1Test1Test1Test1Test1Test1Test1Test1Test1Test1Test1Test1Test1Test1Test1Test1Test1Test1Test1Test1Test1Test1Test1Test1Test1Test1Test1Test1"/>
-                <ListCell title="Test1" comment="Test"/>
-                <ListCell title="Test1" comment="Test"/>
-                <ListCell title="Test1" comment="Test"/>
-                <ListCell title="Test1" comment="Test"/>
-                <ListCell title="Test1" comment="Test"/>
-                <ListCell title="Test1" comment="Test"/>
-                <ListCell title="Test1" comment="Test"/>
-                <ListCell title="Test1" comment="Test"/>
-                <ListCell title="Test1" comment="Test"/>
-                <ListCell title="Test1" comment="Test"/>
-                <ListCell title="Test1" comment="Test"/>
-                <ListCell title="Test1" comment="Test"/>
-                <ListCell title="Test1" comment="Test"/>
-                <ListCell title="Test1" comment="Test"/>
-                <ListCell title="Test1" comment="Test"/>
-                <ListCell title="Test1" comment="Test"/>
-                <ListCell title="Test1" comment="Test"/>
-                <ListCell title="Test1" comment="Test"/>
-                <ListCell title="Test1" comment="Test"/>
-                <ListCell title="Test1" comment="Test"/>
-                <ListCell title="Test1" comment="Test"/>
-                <ListCell title="Test1" comment="Test"/>
-                <ListCell title="Test1" comment="Test"/>
-                <ListCell title="Test1" comment="Test"/>
-                <ListCell title="Test1" comment="Test"/>
+                {ListCells}
             </div>
             <div id="listSelectWrap">
                 <button className='listSelectBtn'
