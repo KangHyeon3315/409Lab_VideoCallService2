@@ -19,33 +19,49 @@
 .listCell {
     display: flex;
     flex-direction: row;
+    align-items: center;
 
     margin: 5px;
 
     height: calc(7vh + 2px);
+    max-height: calc(100px + 2px);
     border: solid 1px lightgray;
     border-radius: 15px;
 }
 
-.listCell:hover {
+.subCell:hover {
+
     background-color: #AAAAAA22;
 }
 
 .selectedListCell {
     display: flex;
     flex-direction: row;
+    align-items: center;
 
     margin: 5px;
 
     height: calc(7vh + 2px);
-    border-bottom: solid 1px lightgray;
+    max-height: calc(100px + 2px);
+    border: solid 1px lightgray;
+    border-radius: 15px;
     background-color: #AAAAAA33;
+}
+
+.subCell {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    border-radius: 15px;
 }
 
 .listCellImg {
     width: 6vh;
     height: 6vh;
     margin: 0.5vh;
+
+    max-height: calc(75px + 2px);
+    max-width: calc(75px + 2px);
 
     border: solid 1px lightgray;
     
@@ -58,29 +74,30 @@
 }
 
 .listCellInfo {
+    height: calc(100% - 20px);
     padding: 10px;
-    min-width: calc(100% - 7vh - 20px);
-    max-width: calc(100% - 7vh - 20px);
-
+    flex: 1;
+    
     display: flex;
     flex-direction: column;
 }
 
 .listCellTitle {
-    padding-bottom: 3px;
+    padding-left: 10px;
+    padding-bottom: 0.5vh;
     border-bottom: solid 1px lightgray;
-
 }
 
 .listCellComment {
     flex: 1;
     padding-top: 3px;
+    padding-left: 10px;
 
     overflow-wrap: break-word;
     overflow-y: hidden;
 }
 
-#listSelectWrap {
+#listSelectWrap, #listHeader {
     width: 100%;
     height: 5vh;
 
@@ -89,6 +106,7 @@
     align-items: center;
 
     border-top: solid 1px lightgray;
+    border-bottom: solid 1px lightgray;
 }
 
 .listSelectBtn {
@@ -99,12 +117,149 @@
 }
 
 .listIcon, .selectedListIcon {
-    width: 1.5vh;
-    height: 1.5vh;
+    width: 2vh;
+    height: 2vh;
     padding: 1vh;
-    border-radius: 3vh;
+    border-radius: 1vh;
 }
 
 .listIcon:hover, .selectedListIcon {
     background-color: #44444444;
+}
+
+.listCellOption {
+    text-align: center;
+    padding: 5px;
+    border: none;
+    border-radius: 5px;
+    background-color: #00000000;
+}
+
+.listCellOption:hover {
+    background-color: #AAAAAA22;   
+}
+
+#FriendAddWrap {
+    width: 18vw;
+    padding: 2vh;
+    border: solid 2px lightgray;
+    border-radius: 2vh;
+    background-color: white;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-around;
+}
+
+.inputWrap {
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    margin-top: 1.5vh;
+    margin-bottom: 1vh;
+}
+
+.inputWrap label {
+    flex: 1;
+}
+
+
+.inputWrap input {
+    flex: 4;
+    height: 2.5vh;
+    border: solid 1px gray;
+    border-radius: 3vh;
+    text-align: center;
+    padding-left: 1vh;
+    padding-right: 1vh;
+}
+
+#FriendsAddBtn{
+    width: 100%;
+    margin-top: 2vh;
+    margin-bottom: 2vh;
+
+    height: 2.5vh;
+    
+    border: none;
+    border-radius: 3vh;
+    background-color: cornflowerblue;
+    color: white;
+    font-weight: bold;
+}
+
+#FriendsAddBtn:hover, .newChatMsg button:hover {
+    background-color: #6495EDEE;
+}
+
+.newChatMsg {
+    border-top: solid 1px lightgray;
+    border-bottom: solid 1px lightgray;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px;
+}
+
+.newChatMsg b {
+    padding-bottom: 5px;
+}
+
+.newChatMsg button {
+    width: 80%;
+
+    height: 2.5vh;
+    
+    border: none;
+    border-radius: 3vh;
+    background-color: cornflowerblue;
+    color: white;
+    font-weight: bold;
+}
+
+.optionBtnWrap {
+    padding: 5px;
+    border-radius: 5px;
+    border: solid 2px lightgray;
+    
+    background-color: white;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-around;
+}
+
+.optionBtn {
+    padding: 5px;
+    padding-right: 20px;
+    padding-left: 20px;
+
+    border-radius: 5px;
+
+    color: coral;
+    background-color: white;
+    font-weight: bold;
+    border: none;
+}
+
+.optionBtn:hover {
+    background-color: #AAAAAA22;      
+}
+
+.chatTitleInput {
+    width: calc(80% - 4vh);
+    height: 2.5vh;
+    padding-left: 2vh;
+    padding-right: 2vh;
+    
+    border: solid 1px lightgray;
+    border-radius: 3vh;
+    font-weight: bold;
+    text-align: center;
+    margin-top: 10px;
+    margin-bottom: 10px;
 }

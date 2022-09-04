@@ -1,15 +1,13 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import ListViewer from '../Component/Home/ListViewer';
 import Header from '../Component/Common/Header';
-import axios from 'axios';
+import Chat from '../Component/Chat/Chat';
 import './Home.css';
 
-function Home({ match }) {
+function Home(props) {
     const navigate = useNavigate();
     const [isMobileMode, setMobileMode] = useState(false);
-    const [friends, setFriends] = useState([]);
-    const [rooms, setRooms] = useState([]);
 
     useEffect(() => {
         const token = sessionStorage.getItem('token');
@@ -17,20 +15,6 @@ function Home({ match }) {
             navigate('/signin')
             return;
         }
-
-        axios.get("/api/user/info", {
-            headers: { "X-AUTH-TOKEN": sessionStorage.getItem('token'), },
-            params: { username: sessionStorage.getItem('username') }
-        })
-            .then(res => {
-                if (res.status === 403) navigate('/signin')
-
-                setFriends(res.data.friendsList)
-                setRooms(res.data.roomList)
-            })
-            .catch(ex => {
-                if (ex.response.status === 403) navigate('/signin')
-            })
 
         onResize();
         window.addEventListener('resize', onResize);
@@ -49,22 +33,40 @@ function Home({ match }) {
         }
     }
 
+    const { roomId } = useParams();
 
     let contents;
-    if (isMobileMode) {
+    if (roomId === undefined && isMobileMode) {
         contents = (
             <div id='mobileItemList'>
-                <ListViewer friends={friends} rooms={rooms}/>
+                <ListViewer />
+            </div>
+        )
+    } else if (isMobileMode) {
+        contents = (
+            <div id='contents'>
+                <Chat roomId={roomId}/>
+            </div>
+        )
+    } else if (roomId === undefined) {
+        contents = (
+            <div id="contentsWrap">
+                <div id='itemList'>
+                    <ListViewer />
+                </div>
+                <div id='contents'>
+                    채팅방을 선택하세요
+                </div>
             </div>
         )
     } else {
         contents = (
             <div id="contentsWrap">
                 <div id='itemList'>
-                    <ListViewer friends={friends} rooms={rooms}/>
+                    <ListViewer />
                 </div>
                 <div id='contents'>
-                    채팅방을 선택하세요
+                    <Chat roomId={roomId}/>
                 </div>
             </div>
         )

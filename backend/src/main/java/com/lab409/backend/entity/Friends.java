@@ -1,11 +1,17 @@
 package com.lab409.backend.entity;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import javax.persistence.*;
 
 @Entity(name = "friends")
 @Getter
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class Friends {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

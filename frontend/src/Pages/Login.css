@@ -61,3 +61,7 @@
     color: white;
     font-weight: bold;
 }
+
+#LoginBtn:hover {
+    background-color: #6495EDEE;
+}

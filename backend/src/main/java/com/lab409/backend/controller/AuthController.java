@@ -53,7 +53,6 @@ public class AuthController {
 
         String token = jwtTokenProvider.createToken(user.getUsername(), roles);
 
-        System.out.println(token);
         return new SigninRes(true, null, token);
     }
 }

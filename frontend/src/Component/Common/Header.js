@@ -1,15 +1,13 @@
 import "./Header.css"
 import { MdOutlineLogout } from 'react-icons/md'
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 
 function Header(props) {
     const navigate = useNavigate();
 
     return (
         <div id="header">
-            <b id="logo">
-                409 Labs
-            </b>
+            <Link id="logoLink" to="/"><b id="logo"> 409 Labs </b></Link>
             <MdOutlineLogout
             id="logoutBtn"
             onClick={() => {

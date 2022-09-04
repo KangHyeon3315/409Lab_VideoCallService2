@@ -6,7 +6,7 @@ import lombok.Getter;
 
 @Getter
 public class RoomInfo {
-    private final long chatId;
+    private final String chatId;
     private final String title;
 
     public RoomInfo(ChatRoom room) {

@@ -9,19 +9,19 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public class FriendsInfo {
-    private final long id;
+    private final String id;
     private final String nickname;
     private final String email;
-    private final long chatId;
+    private final String chatId;
     public FriendsInfo(Friends friends) {
         User userInfo =  friends.getFriendsInfo();
 
-        id = userInfo.getId();
+        id = userInfo.getUsername();
         nickname = userInfo.getNickname();
         email = userInfo.getEmail();
 
         ChatJoin chatInfo = friends.getChatJoin();
-        chatId = chatInfo.getRoomInfo().getId();
+        chatId = chatInfo != null ? chatInfo.getRoomInfo().getId() : null;
     }
 
 }

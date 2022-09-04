@@ -22,8 +22,8 @@ import java.util.List;
 public class JwtTokenProvider {
     private String secretKey = "suwon409lab";
 
-    // 토큰 유효시간 30분
-    private final long tokenValidTime = 30 * 60 * 1000L;
+    // 토큰 유효시간 6시간
+    private final long tokenValidTime = 6 * 60 * 60 * 1000L;
 
     private final UserDetailsService userDetailsService;
 

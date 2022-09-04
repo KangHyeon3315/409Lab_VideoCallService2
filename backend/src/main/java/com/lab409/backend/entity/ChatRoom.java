@@ -1,15 +1,17 @@
 package com.lab409.backend.entity;
 
-import lombok.Getter;
+import lombok.*;
 
 import javax.persistence.*;
 
 @Getter
+@Builder
 @Entity(name="chat_room")
+@RequiredArgsConstructor
+@AllArgsConstructor
 public class ChatRoom {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private long id;
+    private String id;
 
     @Column(nullable = false, length = 40)
     private String title;

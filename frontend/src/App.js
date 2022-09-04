@@ -14,6 +14,7 @@ function App() {
             <Route exact path='/' element={<Home />} />,
             <Route path='/signin' element={<Login />} />,
             <Route path='/signup' element={<Signup />} />,
+            <Route path='/chat/:roomId' element={<Home />} />,
           </Routes>
         </div>
 
