@@ -5,6 +5,8 @@ import { BiCommentAdd, BiDotsVerticalRounded } from 'react-icons/bi';
 import { useNavigate } from 'react-router-dom';
 import Popup from 'reactjs-popup';
 import axios from 'axios';
+import defaultProfile from '../../res/defaultProfile.png';
+
 import { useCallback, useEffect, useState } from 'react';
 
 function ListCell(props) {
@@ -15,9 +17,9 @@ function ListCell(props) {
                     props.clicked(props)
                 }
             }}>
-                <div className='listCellImg'>
-                    Img
-                </div>
+
+                <img className='listCellImg' alt="profile" src={defaultProfile} width="100%" height="100%" />
+
                 <div className='listCellInfo'>
                     <div className='listCellTitle'>
                         {props.title}
@@ -206,7 +208,7 @@ function ListViewer(props) {
                     title={roomInfo.title}
                     comment={""}
                     chatId={roomInfo.chatId}
-                    clicked={() => navigate("/chat/" + roomInfo.chatId)}
+                    clicked={() => { navigate("/chat/" + roomInfo.chatId) }}
                     deleteClicked={() => exitChatRoom(roomInfo)}
                 />
             )

@@ -1,6 +1,7 @@
 package com.lab409.backend.service;
 
 import com.lab409.backend.dto.chat.info.ChatInfo;
+import com.lab409.backend.dto.chat.info.Member;
 import com.lab409.backend.dto.chat.response.ChatInfoRes;
 import com.lab409.backend.dto.common.response.DefaultRes;
 import com.lab409.backend.dto.user.response.UserInfoRes;
@@ -132,7 +133,7 @@ public class ChatService {
     public ChatInfoRes getChatInfo(String chatId, String userId) {
         Optional<ChatRoom> chatRoom = chatRoomRepository.findById(chatId);
         if (!chatRoom.isPresent()) {
-            return new ChatInfoRes(false, "채팅방을 찾을 수 없습니다.", null, null);
+            return new ChatInfoRes(false, "채팅방을 찾을 수 없습니다.", null, null, null);
         }
 
         List<Chat> chatList = chatRepository.findTop30ByRoomInfoOrderBySendTimeAsc(chatRoom.get());
@@ -145,6 +146,13 @@ public class ChatService {
             chatInfoList.add(info);
         }
 
-        return new ChatInfoRes(true, null, chatRoom.get().getTitle(), chatInfoList);
+        List<Member> userList = new ArrayList<>();
+        List<ChatJoin> joinList = chatJoinRepository.findAllByRoomInfo(chatRoom.get());
+        for(ChatJoin join : joinList) {
+            User user = join.getUser();
+            userList.add(new Member(user.getUsername(), user.getNickname()));
+        }
+
+        return new ChatInfoRes(true, null, chatRoom.get().getTitle(), chatInfoList, userList);
     }
 }

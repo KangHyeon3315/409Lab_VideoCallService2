@@ -41,7 +41,7 @@ public class WebSecurityConfig {
                 .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 .and()
                 .authorizeRequests((requests) -> requests
-                        .antMatchers( "/api/auth/signup", "/api/auth/signin").permitAll()
+                        .antMatchers( "/api/auth/signup", "/api/auth/signin", "/ws/chat").permitAll()
                         .anyRequest().authenticated()
                         .and()
                         .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider), UsernamePasswordAuthenticationFilter.class)
