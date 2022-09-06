@@ -9,6 +9,7 @@ import com.lab409.backend.repository.ChatRoomRepository;
 import com.lab409.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
@@ -23,7 +24,7 @@ import java.util.*;
 @RequiredArgsConstructor
 public class ChatHandler extends TextWebSocketHandler {
     private static final HashMap<String, WebSocketSession> sessionMap = new HashMap<>();
-    public static final SimpleDateFormat DT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    private static final SimpleDateFormat DT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
     private final JwtTokenProvider jwtTokenProvider;
     private final ChatRepository chatRepository;
     private final ChatRoomRepository chatRoomRepository;

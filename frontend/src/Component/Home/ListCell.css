@@ -1,0 +1,104 @@
+.listCell {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+
+    margin: 5px;
+
+    height: calc(7vh + 2px);
+    max-height: calc(100px + 2px);
+    border: solid 1px lightgray;
+    border-radius: 15px;
+}
+
+.listCell:hover {
+    background-color: #AAAAAA22;
+}
+
+.subCell {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    border-radius: 15px;
+}
+
+.listCellImg {
+    width: 6vh;
+    height: 6vh;
+    margin: 0.5vh;
+
+    max-height: calc(75px + 2px);
+    max-width: calc(75px + 2px);
+
+    border: solid 1px lightgray;
+    
+    border-radius: 5vh;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.listCellInfo {
+    height: calc(100% - 20px);
+    padding: 10px;
+    flex: 1;
+    
+    display: flex;
+    flex-direction: column;
+}
+
+.listCellTitle {
+    padding-left: 10px;
+    padding-bottom: 0.5vh;
+    border-bottom: solid 1px lightgray;
+}
+
+.listCellComment {
+    flex: 1;
+    padding-top: 3px;
+    padding-left: 10px;
+
+    overflow-wrap: break-word;
+    overflow-y: hidden;
+}
+
+.listCellOption {
+    text-align: center;
+    padding: 5px;
+    border: none;
+    border-radius: 5px;
+    background-color: #00000000;
+}
+
+
+.optionBtnWrap {
+    padding: 5px;
+    border-radius: 5px;
+    border: solid 2px lightgray;
+    
+    background-color: white;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-around;
+}
+
+.optionBtn {
+    padding: 5px;
+    padding-right: 20px;
+    padding-left: 20px;
+
+    border-radius: 5px;
+
+    color: coral;
+    background-color: white;
+    font-weight: bold;
+    border: none;
+}
+
+.optionBtn:hover {
+    background-color: #AAAAAA22;      
+}

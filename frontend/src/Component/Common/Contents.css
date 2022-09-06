@@ -1,0 +1,73 @@
+#ContentsWrap {
+    flex: 1;
+
+    display: flex;
+    flex-direction: column;
+
+}
+
+.ContentsHeader {
+    height: 5vh;
+    
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+
+    border-bottom: solid 1px lightgray;
+}
+
+.ContentsBody {
+    height: calc(100vh - 5vh - 50px);
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.RoomTitle {
+    flex: 1;
+    text-align: start;
+}
+
+.InvitePopupWrap {
+    width: 300px;
+    padding: 10px;
+    border-radius: 5px;
+    border: solid 2px lightgray;
+
+    background-color: white;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-around;
+}
+
+.InvitePopupMsg {
+    width: calc(100% - 30px);
+    padding-left: 15px;
+    padding-right: 15px;
+    border-bottom: solid 1px lightgray;
+}
+
+.inviteListWrap {
+    height: calc(80vh - 100px);
+    width: 100%;
+    overflow-y: auto;
+}
+
+.InviteBtn {
+    width: 100%;
+    height: 35px;
+    
+    border: none;
+    border-radius: 3vh;
+    background-color: cornflowerblue;
+    color: white;
+    font-weight: bold;
+}
+
+.InviteBtn:hover {
+    background-color: #6495EDEE;
+}

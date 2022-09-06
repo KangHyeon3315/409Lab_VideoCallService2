@@ -1,6 +1,6 @@
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 
-import Home from './Pages/Home';
+import Main from './Pages/Main';
 import Signup from './Pages/Signup';
 import Login from './Pages/Login';
 
@@ -11,10 +11,10 @@ function App() {
         <div>
           <Routes>
 
-            <Route exact path='/' element={<Home />} />,
+            <Route exact path='/' element={<Main />} />,
             <Route path='/signin' element={<Login />} />,
             <Route path='/signup' element={<Signup />} />,
-            <Route path='/chat/:roomId' element={<Home />} />,
+            <Route path='/chat/:roomId' element={<Main />} />,
           </Routes>
         </div>
 

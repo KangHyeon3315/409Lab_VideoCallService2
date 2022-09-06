@@ -1,142 +1,48 @@
 #listViewer {
-    width: 100%;
     height: 100%;
     border-right: solid 1px lightgray;
+}
+
+#listContents {
+    height: 100%;
 
     display: flex;
     flex-direction: column;
 }
 
-#listWrap {
-    flex: 1;
-    max-height: calc(100vh - 50px - 60px); /* header 및 select 버튼 제외*/
-    display: flex;
-    flex-direction: column;
-
-    overflow-y: auto;
-}
-
-.listCell {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-
-    margin: 5px;
-
-    height: calc(7vh + 2px);
-    max-height: calc(100px + 2px);
-    border: solid 1px lightgray;
-    border-radius: 15px;
-}
-
-.subCell:hover {
-
-    background-color: #AAAAAA22;
-}
-
-.selectedListCell {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-
-    margin: 5px;
-
-    height: calc(7vh + 2px);
-    max-height: calc(100px + 2px);
-    border: solid 1px lightgray;
-    border-radius: 15px;
-    background-color: #AAAAAA33;
-}
-
-.subCell {
-    display: flex;
-    flex-direction: row;
-    width: 100%;
-    border-radius: 15px;
-}
-
-.listCellImg {
-    width: 6vh;
-    height: 6vh;
-    margin: 0.5vh;
-
-    max-height: calc(75px + 2px);
-    max-width: calc(75px + 2px);
-
-    border: solid 1px lightgray;
-    
-    border-radius: 5vh;
-
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-}
-
-.listCellInfo {
-    height: calc(100% - 20px);
-    padding: 10px;
-    flex: 1;
-    
-    display: flex;
-    flex-direction: column;
-}
-
-.listCellTitle {
-    padding-left: 10px;
-    padding-bottom: 0.5vh;
-    border-bottom: solid 1px lightgray;
-}
-
-.listCellComment {
-    flex: 1;
-    padding-top: 3px;
-    padding-left: 10px;
-
-    overflow-wrap: break-word;
-    overflow-y: hidden;
-}
-
-#listSelectWrap, #listHeader {
+#listHeader {
     width: 100%;
     height: 5vh;
 
     display: flex;
     flex-direction: row;
     align-items: center;
+}
+
+#listSelectWrap, #listHeader2 {
+    width: 100%;
+    height: 5vh;
+
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-evenly;
+}
+
+#listWrap {
+    height: calc(100vh - 50px - 10vh - 2px); /* Page Header 및 List Header & Footer, Border Width*/
+    display: flex;
+    flex-direction: column;
 
     border-top: solid 1px lightgray;
     border-bottom: solid 1px lightgray;
 }
 
-.listSelectBtn {
-    flex: 1;
+#listCellWrap {
+    display: flex;
+    flex-direction: column;
 
-    border: none;
-    background-color: #00000000;
-}
-
-.listIcon, .selectedListIcon {
-    width: 2vh;
-    height: 2vh;
-    padding: 1vh;
-    border-radius: 1vh;
-}
-
-.listIcon:hover, .selectedListIcon {
-    background-color: #44444444;
-}
-
-.listCellOption {
-    text-align: center;
-    padding: 5px;
-    border: none;
-    border-radius: 5px;
-    background-color: #00000000;
-}
-
-.listCellOption:hover {
-    background-color: #AAAAAA22;   
+    overflow-y: auto;
 }
 
 #FriendAddWrap {
@@ -162,12 +68,12 @@
 }
 
 .inputWrap label {
-    flex: 1;
+    margin-left: 5px;
+    margin-right: 5px;
 }
 
-
 .inputWrap input {
-    flex: 4;
+    flex: 1;
     height: 2.5vh;
     border: solid 1px gray;
     border-radius: 3vh;
@@ -218,36 +124,6 @@
     background-color: cornflowerblue;
     color: white;
     font-weight: bold;
-}
-
-.optionBtnWrap {
-    padding: 5px;
-    border-radius: 5px;
-    border: solid 2px lightgray;
-    
-    background-color: white;
-
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: space-around;
-}
-
-.optionBtn {
-    padding: 5px;
-    padding-right: 20px;
-    padding-left: 20px;
-
-    border-radius: 5px;
-
-    color: coral;
-    background-color: white;
-    font-weight: bold;
-    border: none;
-}
-
-.optionBtn:hover {
-    background-color: #AAAAAA22;      
 }
 
 .chatTitleInput {

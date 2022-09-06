@@ -1,5 +1,6 @@
 package com.lab409.backend.service;
 
+import com.lab409.backend.controller.ChatHandler;
 import com.lab409.backend.dto.chat.info.ChatInfo;
 import com.lab409.backend.dto.chat.info.Member;
 import com.lab409.backend.dto.chat.response.ChatInfoRes;
@@ -65,6 +66,7 @@ public class ChatService {
                 return new DefaultRes(false, "사용자를 찾을 수 없습니다.");
             }
 
+
             ChatJoin chatJoin = ChatJoin.builder()
                     .user(user.get())
                     .roomInfo(chatRoom)
@@ -96,8 +98,6 @@ public class ChatService {
 
         chatJoinRepository.delete(chatJoin.get());
 
-        System.out.println(chatJoinRepository.countByRoomInfo(chatRoom.get()));
-
         if (chatJoinRepository.countByRoomInfo(chatRoom.get()) == 0) {
 
             chatRepository.deleteAllByRoomInfo(chatRoom.get());
@@ -108,24 +108,28 @@ public class ChatService {
         return new DefaultRes(true, null);
     }
 
-    public DefaultRes inviteChatRoom(String chatId, String userId) {
-
-        Optional<User> user = userRepository.findByUsername(userId);
-
-        if (!user.isPresent()) {
-            return new DefaultRes(false, "사용자를 찾을 수 없습니다.");
-        }
+    public DefaultRes inviteChatRoom(String chatId, String[] userIds) {
 
         Optional<ChatRoom> chatRoom = chatRoomRepository.findById(chatId);
         if (!chatRoom.isPresent()) {
             return new DefaultRes(false, "채팅방을 찾을 수 없습니다.");
         }
 
-        ChatJoin chatJoin = ChatJoin.builder()
-                .user(user.get())
-                .roomInfo(chatRoom.get())
-                .build();
-        chatJoinRepository.save(chatJoin);
+        List<ChatJoin> joinList = new ArrayList<>();
+        for (String userId : userIds) {
+            Optional<User> user = userRepository.findByUsername(userId);
+            if (!user.isPresent()) {
+                return new DefaultRes(false, "사용자를 찾을 수 없습니다.");
+            }
+
+            ChatJoin chatJoin = ChatJoin.builder()
+                    .user(user.get())
+                    .roomInfo(chatRoom.get())
+                    .build();
+            joinList.add(chatJoin);
+        }
+
+        chatJoinRepository.saveAll(joinList);
 
         return new DefaultRes(true, null);
     }
@@ -139,7 +143,7 @@ public class ChatService {
         List<Chat> chatList = chatRepository.findTop30ByRoomInfoOrderBySendTimeAsc(chatRoom.get());
 
         List<ChatInfo> chatInfoList = new ArrayList<>();
-        for(Chat chat : chatList) {
+        for (Chat chat : chatList) {
             User sender = chat.getSender();
 
             ChatInfo info = new ChatInfo(chat.getId(), sender.getUsername(), sender.getNickname(), DatetimeFormatter.format(chat.getSendTime()), chat.getChat());
@@ -148,7 +152,7 @@ public class ChatService {
 
         List<Member> userList = new ArrayList<>();
         List<ChatJoin> joinList = chatJoinRepository.findAllByRoomInfo(chatRoom.get());
-        for(ChatJoin join : joinList) {
+        for (ChatJoin join : joinList) {
             User user = join.getUser();
             userList.add(new Member(user.getUsername(), user.getNickname()));
         }

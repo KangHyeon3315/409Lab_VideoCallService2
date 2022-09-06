@@ -25,8 +25,8 @@ public class ChatController {
     }
 
     @PostMapping("/invite")
-    public DefaultRes inviteChatRoom(String chatId, String userId) {
-        return chatService.inviteChatRoom(chatId, userId);
+    public DefaultRes inviteChatRoom(String chatId, @RequestParam(name = "userIds[]") String[] userIds) {
+        return chatService.inviteChatRoom(chatId, userIds);
     }
 
     @GetMapping("/info")
