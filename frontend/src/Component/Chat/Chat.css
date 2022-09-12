@@ -1,11 +1,9 @@
 .ChatWrap {
     height: 100%;
-    width: calc(100% - 1px);
+    width: 100%;
 
     display: flex;
     flex-direction: column;
-
-    border-left: solid 1px lightgray;
 }
 
 .ChatFooter {
@@ -105,12 +103,14 @@
     width: 100%;
     display: flex;
     flex-direction: row;
+    flex-wrap: wrap;
 }
 
 .MyChatSendInfo {
     width: 100%;
     display: flex;
     flex-direction: row-reverse;
+    flex-wrap: wrap;
 }
 
 .Sender {

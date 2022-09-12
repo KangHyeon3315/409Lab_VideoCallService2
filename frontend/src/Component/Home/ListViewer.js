@@ -182,7 +182,7 @@ function ListViewer(props) {
         )
     } else {
         Contents = (
-            <div id="listContents" style={{ width: 400 }}>
+            <div id="listContents" style={{ width: 300 }}>
                 <div id="listHeader">
                     <div id="listHeader2">
                         <button className='IconBtn'

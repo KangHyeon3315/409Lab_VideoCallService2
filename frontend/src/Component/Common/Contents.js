@@ -2,6 +2,7 @@ import './Contents.css'
 
 import { MdOutlineKeyboardArrowLeft, MdPlayArrow, MdDesktopWindows, MdPersonAddAlt1 } from 'react-icons/md';
 import { BiArrowToBottom, BiComment } from 'react-icons/bi';
+import { FiCamera, FiMic } from 'react-icons/fi';
 import { useNavigate, useParams } from 'react-router-dom'
 import { useEffect, useState, useRef } from 'react';
 import ChatCell from '../Chat/ChatCell';
@@ -14,7 +15,10 @@ export default function Contents(props) {
     const navigate = useNavigate();
     const { roomId } = useParams();
 
-    const [mode, setMode] = useState("Chat");
+    const [useMic, setUseMic] = useState(false);
+    const [useCam, setUsecam] = useState(false);
+    const [chatEnable, setChatEnable] = useState(false);
+    const [mode, setMode] = useState(null);
     const [roomTitle, setRoomTitle] = useState("Title")
 
     const [autoScroll, setAutoScroll] = useState(true);
@@ -199,9 +203,29 @@ export default function Contents(props) {
 
     let Contents;
     if (roomId === undefined) {
-        Contents = <div> 채팅방을 선택하세요 </div>
-    } else if (mode === "Chat") {
-        Contents = <Chat ChatCmpList={chatCmpList} SendMsg={SendMsg} />
+        Contents = <div className='ContentsBody'> 채팅방을 선택하세요 </div>
+    } else if (chatEnable && mode === null) {
+        Contents = <Chat ChatCmpList={chatCmpList} SendMsg={SendMsg} scrollBottom={autoScroll} />
+    } else if (mode) {
+        let mainContents = (
+            <div className='MetaContents'>
+                {mode}
+            </div>
+        )
+
+        Contents = (
+            <div className='ContentsBody'>
+                {mainContents}
+                {chatEnable ?
+                    <div className='VerticalLine' />
+                    : null}
+                {chatEnable ?
+                    <div className='SideChatWrap'>
+                        <Chat ChatCmpList={chatCmpList} SendMsg={SendMsg} scrollBottom={autoScroll} />
+                    </div>
+                    : null}
+            </div>
+        )
     }
 
 
@@ -213,24 +237,39 @@ export default function Contents(props) {
                 </button>
                 <b className='RoomTitle'>{roomTitle}</b>
 
-                {mode !== "Chat" ? null :
+                {mode !== "Tele" ? null :
+                    <button className='IconBtn' onClick={() => { setUsecam(!useCam) }}
+                        style={{ backgroundColor: useCam ? "#44444444" : null }}
+                    >
+                        <FiCamera className='Icon' />
+                    </button>
+                }
+                {mode !== "Tele" ? null :
+                    <button className='IconBtn' onClick={() => { setUseMic(!useMic) }}
+                        style={{ backgroundColor: useMic ? "#44444444" : null }}
+                    >
+                        <FiMic className='Icon' />
+                    </button>
+                }
+
+                {!chatEnable ? null :
                     <button className='IconBtn' onClick={() => { setAutoScroll(!autoScroll) }}
                         style={{ backgroundColor: autoScroll ? "#44444444" : null }}
                     >
                         <BiArrowToBottom className='Icon' />
                     </button>
                 }
-                <button className='IconBtn' onClick={() => setMode("Chat")}
-                    style={{ backgroundColor: mode === "Chat" ? "#44444444" : null }}
+                <button className='IconBtn' onClick={() => setChatEnable(!chatEnable)}
+                    style={{ backgroundColor: chatEnable ? "#44444444" : null }}
                 >
                     <BiComment className='Icon' />
                 </button>
-                <button className='IconBtn' onClick={() => setMode("Meta")}
+                <button className='IconBtn' onClick={() => setMode(mode === "Meta" ? null : "Meta")}
                     style={{ backgroundColor: mode === "Meta" ? "#44444444" : null }}
                 >
                     <MdPlayArrow className='Icon' />
                 </button>
-                <button className='IconBtn' onClick={() => setMode("Tele")}
+                <button className='IconBtn' onClick={() => setMode(mode === "Tele" ? null : "Tele")}
                     style={{ backgroundColor: mode === "Tele" ? "#44444444" : null }}
                 >
                     <MdDesktopWindows className='Icon' />
@@ -255,10 +294,7 @@ export default function Contents(props) {
                 </Popup>
 
             </div>
-            <div className='ContentsBody'>
-                {Contents}
-            </div>
-
+            {Contents}
         </div>
     )
 }

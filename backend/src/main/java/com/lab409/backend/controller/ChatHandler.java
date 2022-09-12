@@ -24,7 +24,9 @@ import java.util.*;
 @RequiredArgsConstructor
 public class ChatHandler extends TextWebSocketHandler {
     private static final HashMap<String, WebSocketSession> sessionMap = new HashMap<>();
+    private static final HashMap<String, List<String>> meetroomMap = new HashMap<>();
     private static final SimpleDateFormat DT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+
     private final JwtTokenProvider jwtTokenProvider;
     private final ChatRepository chatRepository;
     private final ChatRoomRepository chatRoomRepository;
