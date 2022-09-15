@@ -7,7 +7,7 @@
 }
 
 .ContentsHeader {
-    height: 5vh;
+    height: 50px;
     
     display: flex;
     flex-direction: row;
@@ -17,7 +17,7 @@
 }
 
 .ContentsBody {
-    height: calc(100vh - 5vh - 50px);
+    height: calc(100vh - 100px);
     width: 100%;
 
     display: flex;
@@ -73,8 +73,10 @@
     background-color: #6495EDEE;
 }
 
-.MetaContents {
+.MainContents {
     flex: 1;
+
+    height: 100%;
 
     display: flex;
     flex-direction: column;
@@ -82,14 +84,27 @@
     justify-content: center;
 }
 
-.SideChatWrap {
+.SideWrap {
     width: 300px;
     height: 100%;
     
+    display: flex;
+    flex-direction: column;
 }
 
 .VerticalLine {
     width: 1px;
     height: 100%;
     border-right: solid 1px lightgray;
+}
+
+.HorizontalLine {
+    height: 1px;
+    width: 100%;
+    border-bottom: solid 1px lightgray;
+}
+
+.HarfSideSection {
+    height: calc((100vh - 100px) / 2);
+
 }

@@ -1,21 +1,27 @@
 import { MdSend } from 'react-icons/md';
 
 import './Chat.css'
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 
 export default function Chat(props) {
-    
+
     const [inputMsg, setInputMsg] = useState("");
     const ChatBody = useRef(null);
 
-    useEffect(() => {
-        if (ChatBody.current && props.scrollBottom)
+    const scrollToBottom = useCallback(() => {
+        if (ChatBody.current && props.scrollBottom) {
             ChatBody.current.scrollTop = ChatBody.current.scrollHeight;
-    }, [props.ChatCmpList, ChatBody, props.scrollBottom])
+        }
+    }, [ChatBody, props.scrollBottom])
+
+    useEffect(() => {
+        scrollToBottom();
+    }, [scrollToBottom])
 
     return (
         <div className='ChatWrap'>
             <div className='ChatBody' ref={ChatBody}>
+                <div className='TopSpacer' />
                 {props.ChatCmpList}
             </div>
             <form className='ChatFooter' onSubmit={(e) => {

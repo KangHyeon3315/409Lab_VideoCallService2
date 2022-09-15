@@ -9,4 +9,5 @@ public class SigninRes {
     private final boolean result;
     private final String msg;
     private final String token;
+    private final String userName;
 }

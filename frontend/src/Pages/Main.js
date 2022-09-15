@@ -15,7 +15,7 @@ function Main(props) {
     const updateUserInfo = useCallback(() => {
         axios.get("/api/user/info", {
             headers: { "X-AUTH-TOKEN": sessionStorage.getItem('token'), },
-            params: { username: sessionStorage.getItem('username') }
+            params: { username: sessionStorage.getItem('userId') }
         })
             .then(res => {
                 if (res.status === 403) navigate('/signin')

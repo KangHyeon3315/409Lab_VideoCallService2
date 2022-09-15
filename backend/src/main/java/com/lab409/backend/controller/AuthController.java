@@ -40,12 +40,12 @@ public class AuthController {
         Optional<User> userOptional = userRepository.findByUsername(username);
 
         if(!userOptional.isPresent()) {
-            return new SigninRes(false, "가입되지 않은 계정입니다.", null);
+            return new SigninRes(false, "가입되지 않은 계정입니다.", null, null);
         }
         User user = userOptional.get();
 
         if (!passwordEncoder.matches(password, user.getPassword())) {
-            return new SigninRes(false, "잘못된 비밀번호입니다.", null);
+            return new SigninRes(false, "잘못된 비밀번호입니다.", null, null);
         }
 
         List<String> roles = new ArrayList<>();
@@ -53,6 +53,6 @@ public class AuthController {
 
         String token = jwtTokenProvider.createToken(user.getUsername(), roles);
 
-        return new SigninRes(true, null, token);
+        return new SigninRes(true, null, token, user.getNickname());
     }
 }

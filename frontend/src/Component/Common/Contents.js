@@ -1,15 +1,17 @@
 import './Contents.css'
 
-import { MdOutlineKeyboardArrowLeft, MdPlayArrow, MdDesktopWindows, MdPersonAddAlt1 } from 'react-icons/md';
+import { MdOutlineKeyboardArrowLeft, MdPlayArrow, MdDesktopWindows, MdPersonAddAlt1, MdPerson } from 'react-icons/md';
 import { BiArrowToBottom, BiComment } from 'react-icons/bi';
 import { FiCamera, FiMic } from 'react-icons/fi';
 import { useNavigate, useParams } from 'react-router-dom'
 import { useEffect, useState, useRef } from 'react';
 import ChatCell from '../Chat/ChatCell';
 import ListCell from '../Home/ListCell';
+import Member from '../Member/Member';
 import Chat from '../Chat/Chat';
 import Popup from 'reactjs-popup';
 import axios from 'axios';
+import VideoCall from '../VideoCall/VideoCall';
 
 export default function Contents(props) {
     const navigate = useNavigate();
@@ -18,7 +20,9 @@ export default function Contents(props) {
     const [useMic, setUseMic] = useState(false);
     const [useCam, setUsecam] = useState(false);
     const [chatEnable, setChatEnable] = useState(false);
-    const [mode, setMode] = useState(null);
+    const [memberEnable, setMemberEnable] = useState(false);
+
+    const [mode, setMode] = useState("VideoCall");
     const [roomTitle, setRoomTitle] = useState("Title")
 
     const [autoScroll, setAutoScroll] = useState(true);
@@ -27,7 +31,7 @@ export default function Contents(props) {
     const ws = useRef(null);
     const [isConnected, setConnected] = useState(false);
 
-    // const [members, setMembers] = useState([]);
+    const [members, setMembers] = useState([]);
     const [memberIds, setMemberIds] = useState([]);
     const [selectedInviteMemberId, setSelectedInviteMemberId] = useState([]);
 
@@ -47,13 +51,13 @@ export default function Contents(props) {
                         token: sessionStorage.getItem("token"),
                         room: roomId,
                         time: getTimeStr(),
-                        users: memberIds,
                         msg: msg
                     }
                 )
             )
         }
     }
+
 
     const InviteMember = () => {
         axios.post('/api/chat/invite', null, {
@@ -82,11 +86,13 @@ export default function Contents(props) {
                 setConnected(true);
                 ws.current.send(JSON.stringify({
                     type: "Join",
-                    token: sessionStorage.getItem("token")
+                    token: sessionStorage.getItem("token"),
+                    name: sessionStorage.getItem("userName")
                 }))
             }
             ws.current.onclose = (err) => { setConnected(false); }
             ws.current.onerror = (err) => { }
+
         }
 
         return () => {
@@ -100,7 +106,10 @@ export default function Contents(props) {
         if (token === null || token === '') { navigate('/signin'); return; }
 
         if (roomId !== undefined) {
-            const userId = sessionStorage.getItem('username');
+            const userId = sessionStorage.getItem('userId');
+
+            // TODO Socket에 해당 Room으로 세션 가입 전송
+
 
             axios.get("/api/chat/info", {
                 headers: { "X-AUTH-TOKEN": sessionStorage.getItem('token'), },
@@ -118,10 +127,12 @@ export default function Contents(props) {
                     res.data.members.forEach(memberInfo => {
                         memberIdList.push(memberInfo.userId);
                     })
-                    setMemberIds(memberIdList);
-                    // setMembers(res.data.members);
 
-                    let chatList = [<p key="init" className='ChatSpacer' />];
+                    setChatEnable(true);
+                    setMemberIds(memberIdList);
+                    setMembers(res.data.members);
+
+                    let chatList = [];
                     res.data.chatList.forEach(chatInfo => {
                         chatList.push(
                             <ChatCell
@@ -149,7 +160,7 @@ export default function Contents(props) {
     useEffect(() => {
         if (ws.current) {
             ws.current.onmessage = (evt) => {
-                const userId = sessionStorage.getItem('username');
+                const userId = sessionStorage.getItem('userId');
                 const data = JSON.parse(evt.data);
 
                 if (data.type === "Chat") {
@@ -201,33 +212,77 @@ export default function Contents(props) {
         })
     }
 
-    let Contents;
-    if (roomId === undefined) {
-        Contents = <div className='ContentsBody'> 채팅방을 선택하세요 </div>
-    } else if (chatEnable && mode === null) {
-        Contents = <Chat ChatCmpList={chatCmpList} SendMsg={SendMsg} scrollBottom={autoScroll} />
-    } else if (mode) {
-        let mainContents = (
-            <div className='MetaContents'>
-                {mode}
-            </div>
-        )
+    let MemberCmp = <Member MemberList={members} />
+    let ChatCmp = <Chat ChatCmpList={chatCmpList} SendMsg={SendMsg} scrollBottom={autoScroll} />
 
-        Contents = (
-            <div className='ContentsBody'>
-                {mainContents}
-                {chatEnable ?
-                    <div className='VerticalLine' />
-                    : null}
-                {chatEnable ?
-                    <div className='SideChatWrap'>
-                        <Chat ChatCmpList={chatCmpList} SendMsg={SendMsg} scrollBottom={autoScroll} />
+    let SideContents = null;
+    if (mode !== null && (chatEnable || memberEnable)) {
+        if (chatEnable && memberEnable) {
+            SideContents = (
+                <div className='SideWrap'>
+                    <div className='HarfSideSection'>
+                        {MemberCmp}
                     </div>
-                    : null}
+                    <div className='HorizontalLine' />
+                    <div className='HarfSideSection'>
+                        {ChatCmp}
+                    </div>
+                </div>
+            )
+
+        } else {
+            SideContents = (
+                <div className='SideWrap'>
+                    {chatEnable ? ChatCmp : MemberCmp}
+                </div>
+            )
+        }
+
+    } else if (mode === null && chatEnable && memberEnable) {
+        SideContents = (
+            <div className='SideWrap'>
+                {memberEnable ? MemberCmp : null}
             </div>
         )
     }
 
+    let mainContents = null;
+    if (mode === "VideoCall") {
+        mainContents = (
+            <div className='MainContents'>
+                <VideoCall
+                    audioEnabled={useMic}
+                    cameraEnabled={useCam}
+                    MemberList={members}
+                />
+            </div>
+        )
+    } else if (mode === "Meta") {
+        mainContents = (
+            <div className='MainContents'>
+                Meta
+            </div>
+        )
+    } else if (chatEnable) {
+        mainContents = (
+            <div className='MainContents'>
+                {ChatCmp}
+            </div>
+        )
+    }
+
+    let Contents;
+    if (roomId === undefined) {
+        Contents = <div className='ContentsBody'> 채팅방을 선택하세요 </div>
+    } else {
+        Contents = (
+            <div className='ContentsBody'>
+                {mainContents}
+                {SideContents ? <div className='VerticalLine' /> : null}
+                {SideContents}
+            </div>
+        )
+    }
 
     return (
         <div id="ContentsWrap">
@@ -237,14 +292,14 @@ export default function Contents(props) {
                 </button>
                 <b className='RoomTitle'>{roomTitle}</b>
 
-                {mode !== "Tele" ? null :
+                {mode !== "VideoCall" ? null :
                     <button className='IconBtn' onClick={() => { setUsecam(!useCam) }}
                         style={{ backgroundColor: useCam ? "#44444444" : null }}
                     >
                         <FiCamera className='Icon' />
                     </button>
                 }
-                {mode !== "Tele" ? null :
+                {mode !== "VideoCall" ? null :
                     <button className='IconBtn' onClick={() => { setUseMic(!useMic) }}
                         style={{ backgroundColor: useMic ? "#44444444" : null }}
                     >
@@ -259,23 +314,27 @@ export default function Contents(props) {
                         <BiArrowToBottom className='Icon' />
                     </button>
                 }
-                <button className='IconBtn' onClick={() => setChatEnable(!chatEnable)}
-                    style={{ backgroundColor: chatEnable ? "#44444444" : null }}
-                >
-                    <BiComment className='Icon' />
-                </button>
+
                 <button className='IconBtn' onClick={() => setMode(mode === "Meta" ? null : "Meta")}
                     style={{ backgroundColor: mode === "Meta" ? "#44444444" : null }}
                 >
                     <MdPlayArrow className='Icon' />
                 </button>
-                <button className='IconBtn' onClick={() => setMode(mode === "Tele" ? null : "Tele")}
-                    style={{ backgroundColor: mode === "Tele" ? "#44444444" : null }}
+                <button className='IconBtn' onClick={() => setMode(mode === "VideoCall" ? null : "VideoCall")}
+                    style={{ backgroundColor: mode === "VideoCall" ? "#44444444" : null }}
                 >
                     <MdDesktopWindows className='Icon' />
                 </button>
-
-
+                <button className='IconBtn' onClick={() => setChatEnable(!chatEnable)}
+                    style={{ backgroundColor: chatEnable ? "#44444444" : null }}
+                >
+                    <BiComment className='Icon' />
+                </button>
+                <button className='IconBtn' onClick={() => setMemberEnable(!memberEnable)}
+                    style={{ backgroundColor: memberEnable ? "#44444444" : null }}
+                >
+                    <MdPerson className='Icon' />
+                </button>
                 <Popup
                     position="bottom right"
                     onClose={() => { setSelectedInviteMemberId([]) }}
