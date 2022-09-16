@@ -1,6 +1,6 @@
 import './Contents.css'
 
-import { MdOutlineKeyboardArrowLeft, MdPlayArrow, MdDesktopWindows, MdPersonAddAlt1, MdPerson } from 'react-icons/md';
+import { MdOutlineKeyboardArrowLeft, MdPlayArrow, MdDesktopWindows, MdPerson, MdPersonAdd } from 'react-icons/md';
 import { BiArrowToBottom, BiComment } from 'react-icons/bi';
 import { FiCamera, FiMic } from 'react-icons/fi';
 import { useNavigate, useParams } from 'react-router-dom'
@@ -12,13 +12,16 @@ import Chat from '../Chat/Chat';
 import Popup from 'reactjs-popup';
 import axios from 'axios';
 import VideoCall from '../VideoCall/VideoCall';
+import Setting from '../VideoCall/Setting';
 
 export default function Contents(props) {
     const navigate = useNavigate();
     const { roomId } = useParams();
 
     const [useMic, setUseMic] = useState(false);
+    const [MicId, setMicId] = useState("default");
     const [useCam, setUsecam] = useState(false);
+    const [CamId, setCamId] = useState("default");
     const [chatEnable, setChatEnable] = useState(false);
     const [memberEnable, setMemberEnable] = useState(false);
 
@@ -251,6 +254,8 @@ export default function Contents(props) {
         mainContents = (
             <div className='MainContents'>
                 <VideoCall
+                    CamId={CamId}
+                    MicId={MicId}
                     audioEnabled={useMic}
                     cameraEnabled={useCam}
                     MemberList={members}
@@ -338,7 +343,7 @@ export default function Contents(props) {
                 <Popup
                     position="bottom right"
                     onClose={() => { setSelectedInviteMemberId([]) }}
-                    trigger={<button className='IconBtn'><MdPersonAddAlt1 className='Icon' /></button>}
+                    trigger={<button className='IconBtn'><MdPersonAdd className='Icon' /></button>}
                 >
                     <div className='InvitePopupWrap'>
                         <div className='InvitePopupMsg'>
@@ -349,8 +354,18 @@ export default function Contents(props) {
                         </div>
                         <button className='InviteBtn' onClick={InviteMember}>초대하기</button>
                     </div>
-
                 </Popup>
+                <Setting
+                    CamId={CamId}
+                    MicId={MicId}
+                    DeviceChanged={(deviceType, deviceId) => {
+                        if(deviceType === "Cam") {
+                            setCamId(deviceId);
+                        } else {
+                            setMicId(deviceId);
+                        }
+                    }}
+                />
 
             </div>
             {Contents}

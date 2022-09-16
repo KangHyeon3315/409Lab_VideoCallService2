@@ -108,3 +108,43 @@
     height: calc((100vh - 100px) / 2);
 
 }
+
+.SettingContainer {
+    border: solid 1px lightgray;
+    border-radius: 10px;
+    background-color: white;
+
+    width: calc(400px - 40px);
+    height: calc(300px - 40px);
+
+    padding: 20px;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.SettingCell {
+    flex: 1;
+
+    padding: 20px;
+    width: calc(100% - 40px);
+
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+.SettingLabel {
+    width: 100px;
+}
+
+.DeviceSelect {
+    flex: 1;
+    width: 200px;
+    height: 30px;
+    padding-left: 10px;
+    padding-right: 10px;
+
+    border-radius: 5px;
+}

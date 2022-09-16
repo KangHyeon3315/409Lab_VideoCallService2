@@ -3,22 +3,27 @@ import './VideoCall.css'
 
 export default function VideoCall(props) {
     const [myStream, setMyStream] = useState(null);
+    const [camId, setCamId] = useState("default");
+    const [micId, setMicId] = useState("default");
 
     const videoRef = useRef([]);
 
 
     useEffect(() => {
-        const getMedia = async () => {
+        const getMedia = async (camId, micId) => {
             try {
                 let myStream = await navigator.mediaDevices.getUserMedia({
-                    audio: true,
-                    video: true,
+                    audio: { deviceId: micId },
+                    video: { deviceId: camId },
                 });
 
                 myStream.getAudioTracks().forEach((track) => (track.enabled = props.audioEnabled))
                 myStream.getVideoTracks().forEach((track) => (track.enabled = props.cameraEnabled))
 
                 setMyStream(myStream);
+
+                setCamId(camId)
+                setMicId(micId)
 
                 videoRef.current[0].srcObject = myStream;
             } catch (ex) {
@@ -27,18 +32,18 @@ export default function VideoCall(props) {
         }
 
         if (myStream === null && (props.cameraEnabled || props.audioEnabled)) {
-            getMedia();
+            getMedia(camId, micId);
         } else if (myStream !== null && !props.cameraEnabled && !props.audioEnabled) {
             myStream.getTracks().forEach((track) => track.stop())
             setMyStream(null);
+        } else if (props.MicId !== micId || props.CamId !== camId) {
+            getMedia(props.CamId, props.MicId);
         } else if (myStream) {
             myStream.getAudioTracks().forEach((track) => (track.enabled = props.audioEnabled))
             myStream.getVideoTracks().forEach((track) => (track.enabled = props.cameraEnabled))
-        } else {
-
         }
 
-    }, [myStream, props.cameraEnabled, props.audioEnabled])
+    }, [myStream, props.cameraEnabled, props.audioEnabled, props.MicId, props.CamId, camId, micId])
 
     let videoList = [];
     for (let i = 0; i < 9; i++) {
