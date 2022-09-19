@@ -19,10 +19,7 @@ import org.springframework.stereotype.Service;
 
 import javax.swing.text.html.Option;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -140,7 +137,8 @@ public class ChatService {
             return new ChatInfoRes(false, "채팅방을 찾을 수 없습니다.", null, null, null);
         }
 
-        List<Chat> chatList = chatRepository.findTop30ByRoomInfoOrderBySendTimeAsc(chatRoom.get());
+        List<Chat> chatList = chatRepository.findTop100ByRoomInfoOrderBySendTimeDesc(chatRoom.get());
+        Collections.reverse(chatList);
 
         List<ChatInfo> chatInfoList = new ArrayList<>();
         for (Chat chat : chatList) {

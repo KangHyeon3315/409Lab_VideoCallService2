@@ -4,7 +4,7 @@ import { MdOutlineKeyboardArrowLeft, MdPlayArrow, MdDesktopWindows, MdPerson, Md
 import { BiArrowToBottom, BiComment } from 'react-icons/bi';
 import { FiCamera, FiMic } from 'react-icons/fi';
 import { useNavigate, useParams } from 'react-router-dom'
-import { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import ChatCell from '../Chat/ChatCell';
 import ListCell from '../Home/ListCell';
 import Member from '../Member/Member';
@@ -46,8 +46,8 @@ export default function Contents(props) {
 
     const SendMsg = (msg) => {
         if (isConnected) {
+            console.log("Send")
             ws.current.send(
-
                 JSON.stringify(
                     {
                         type: "Chat",
@@ -60,7 +60,6 @@ export default function Contents(props) {
             )
         }
     }
-
 
     const InviteMember = () => {
         axios.post('/api/chat/invite', null, {
@@ -81,6 +80,24 @@ export default function Contents(props) {
             })
     }
 
+    const chatRecv = useCallback((data) => {
+        const userId = sessionStorage.getItem('userId');
+        let chatList = [...chatCmpList];
+
+        chatList.push(
+            <ChatCell
+                key={data.id}
+                myChat={data.senderId === userId}
+                profile={data.profile}
+                sender={data.sender}
+                time={data.sendTime}
+                msg={data.msg}
+            />
+        )
+
+        setChatCmpList(chatList)
+    }, [chatCmpList])
+
     useEffect(() => {
         if (!ws.current) {
             ws.current = new WebSocket("ws://localhost:8080/ws/chat");
@@ -95,14 +112,30 @@ export default function Contents(props) {
             }
             ws.current.onclose = (err) => { setConnected(false); }
             ws.current.onerror = (err) => { }
-
         }
 
-        return () => {
-            console.log("Clean up");
-            // ws.current.close();
+        ws.current.onmessage = (evt) => {
+            console.log("Recv")
+            const data = JSON.parse(evt.data);
+            const type = data.type;
+
+            if (type === "Chat") {
+                chatRecv(data);
+            }
         }
-    }, [])
+    }, [chatRecv])
+
+    useEffect(() => {
+        if (ws.current && isConnected && roomId) {
+            ws.current.send(JSON.stringify({
+                type: "Enter",
+                token: sessionStorage.getItem("token"),
+                roomId: roomId,
+            }))
+        }
+
+    }, [roomId, isConnected])
+
 
     useEffect(() => {
         const token = sessionStorage.getItem('token');
@@ -110,9 +143,6 @@ export default function Contents(props) {
 
         if (roomId !== undefined) {
             const userId = sessionStorage.getItem('userId');
-
-            // TODO Socket에 해당 Room으로 세션 가입 전송
-
 
             axios.get("/api/chat/info", {
                 headers: { "X-AUTH-TOKEN": sessionStorage.getItem('token'), },
@@ -149,7 +179,7 @@ export default function Contents(props) {
                         )
                     })
 
-                    setChatCmpList(chatList)
+                    setChatCmpList(chatList);
                 } else {
                     alert(res.data.msg);
                 }
@@ -159,31 +189,6 @@ export default function Contents(props) {
             })
         }
     }, [navigate, roomId]);
-
-    useEffect(() => {
-        if (ws.current) {
-            ws.current.onmessage = (evt) => {
-                const userId = sessionStorage.getItem('userId');
-                const data = JSON.parse(evt.data);
-
-                if (data.type === "Chat") {
-                    let chatList = [...chatCmpList];
-                    chatList.push(
-                        <ChatCell
-                            key={data.id}
-                            myChat={data.senderId === userId}
-                            profile={data.profile}
-                            sender={data.sender}
-                            time={data.sendTime}
-                            msg={data.msg}
-                        />
-                    )
-                    setChatCmpList(chatList)
-                }
-            }
-
-        }
-    }, [chatCmpList, setChatCmpList])
 
     let inviteList = [];
 
@@ -359,7 +364,7 @@ export default function Contents(props) {
                     CamId={CamId}
                     MicId={MicId}
                     DeviceChanged={(deviceType, deviceId) => {
-                        if(deviceType === "Cam") {
+                        if (deviceType === "Cam") {
                             setCamId(deviceId);
                         } else {
                             setMicId(deviceId);

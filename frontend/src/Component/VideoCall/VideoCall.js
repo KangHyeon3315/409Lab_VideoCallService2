@@ -12,20 +12,23 @@ export default function VideoCall(props) {
     useEffect(() => {
         const getMedia = async (camId, micId) => {
             try {
-                let myStream = await navigator.mediaDevices.getUserMedia({
+                
+                if(myStream) myStream.getTracks().forEach((track) => track.stop())
+
+                let newMyStream = await navigator.mediaDevices.getUserMedia({
                     audio: { deviceId: micId },
                     video: { deviceId: camId },
                 });
 
-                myStream.getAudioTracks().forEach((track) => (track.enabled = props.audioEnabled))
-                myStream.getVideoTracks().forEach((track) => (track.enabled = props.cameraEnabled))
+                newMyStream.getAudioTracks().forEach((track) => (track.enabled = props.audioEnabled))
+                newMyStream.getVideoTracks().forEach((track) => (track.enabled = props.cameraEnabled))
 
-                setMyStream(myStream);
+                setMyStream(newMyStream);
 
                 setCamId(camId)
                 setMicId(micId)
 
-                videoRef.current[0].srcObject = myStream;
+                videoRef.current[0].srcObject = newMyStream;
             } catch (ex) {
                 console.log(ex);
             }
@@ -35,8 +38,9 @@ export default function VideoCall(props) {
             getMedia(camId, micId);
         } else if (myStream !== null && !props.cameraEnabled && !props.audioEnabled) {
             myStream.getTracks().forEach((track) => track.stop())
+            videoRef.current[0].srcObject = null;
             setMyStream(null);
-        } else if (props.MicId !== micId || props.CamId !== camId) {
+        } else if (myStream !== null && (props.MicId !== micId || props.CamId !== camId)) {
             getMedia(props.CamId, props.MicId);
         } else if (myStream) {
             myStream.getAudioTracks().forEach((track) => (track.enabled = props.audioEnabled))

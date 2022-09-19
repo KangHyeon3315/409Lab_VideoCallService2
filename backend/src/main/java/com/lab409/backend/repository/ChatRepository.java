@@ -10,5 +10,6 @@ import java.util.List;
 public interface ChatRepository extends JpaRepository<Chat, Long> {
     void deleteAllByRoomInfo(ChatRoom room);
 
-    List<Chat> findTop30ByRoomInfoOrderBySendTimeAsc(ChatRoom roomInfo);
+    // List<Chat> findTop100ByRoomInfoOrderBySendTimeAsc(ChatRoom roomInfo);
+    List<Chat> findTop100ByRoomInfoOrderBySendTimeDesc(ChatRoom roomInfo);
 }

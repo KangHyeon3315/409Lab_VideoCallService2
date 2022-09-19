@@ -77,9 +77,20 @@ public class ChatHandler extends TextWebSocketHandler {
                     List<String> memberList = roomMemberMap.getOrDefault(roomId, null);
                     if (memberList == null) {
                         memberList = new ArrayList<>();
-                        roomMemberMap.put(roomId, memberList);
                     }
-                    memberList.add(roomId);
+
+                    if(!memberList.contains(userId))
+                        memberList.add(userId);
+
+                    userInfo.setRoomId(roomId);
+                    roomMemberMap.put(roomId, memberList);
+
+                    JSONObject resultMsg = new JSONObject();
+                    resultMsg.put("type", "Entered");
+                    resultMsg.put("msg", "Someone Entered");
+                    TextMessage msg = new TextMessage(resultMsg.toString().getBytes());
+
+                    broadCastMsg(roomId, msg);
                     break;
                 }
                 case "Chat": {
@@ -120,52 +131,16 @@ public class ChatHandler extends TextWebSocketHandler {
                     JSONObject resultMsg = new JSONObject();
                     resultMsg.put("type", "Chat");
                     resultMsg.put("id", chatId);
+                    resultMsg.put("roomId", roomId);
                     resultMsg.put("senderId", senderId);
                     resultMsg.put("profile", "");
                     resultMsg.put("sender", sender.get().getNickname());
                     resultMsg.put("sendTime", sendTImeStr);
                     resultMsg.put("msg", payload.getString("msg"));
                     TextMessage msg = new TextMessage(resultMsg.toString().getBytes());
-
                     broadCastMsg(roomId, msg);
                     break;
                 }
-                case "Member": {
-                    String token = payload.getString("token");
-                    if (!jwtTokenProvider.validateToken(token)) {
-                        deleteUserSession(session);
-                        System.out.println("Token is not validate");
-                        return;
-                    }
-
-                    String roomId = payload.getString("room");
-                    List<String> meberList = roomMemberMap.getOrDefault(roomId, null);
-                    List<Member> memberInfoList = new ArrayList<>();
-
-                    if (meberList != null) {
-                        for (String memberId : meberList) {
-                            UserInfo meberInfo = userMap.get(memberId);
-
-                            memberInfoList.add(meberInfo.toDTO());
-                        }
-                    }
-
-                    JSONObject resultMsg = new JSONObject();
-                    resultMsg.put("type", "Member");
-                    resultMsg.put("members", memberInfoList);
-                    TextMessage msg = new TextMessage(resultMsg.toString().getBytes());
-                    session.sendMessage(msg);
-                }
-                /*
-                case "RTC": {
-
-                    break;
-                }
-                case "Meta": {
-
-                    break;
-                }
-                 */
             }
         } catch (Exception ex) {
             System.out.println("handleTextMessage" + ex.getMessage());
@@ -174,6 +149,7 @@ public class ChatHandler extends TextWebSocketHandler {
 
     private void broadCastMsg(String roomId, TextMessage msg) throws IOException {
         for (String memberId : roomMemberMap.get(roomId)) {
+
             UserInfo memberInfo = userMap.getOrDefault(memberId, null);
             if (memberInfo == null) continue;
 
