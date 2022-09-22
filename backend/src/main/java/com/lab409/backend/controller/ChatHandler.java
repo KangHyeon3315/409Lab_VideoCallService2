@@ -1,7 +1,6 @@
 package com.lab409.backend.controller;
 
 import com.lab409.backend.config.JwtTokenProvider;
-import com.lab409.backend.dto.chat.info.Member;
 import com.lab409.backend.dto.chat.info.UserInfo;
 import com.lab409.backend.entity.Chat;
 import com.lab409.backend.entity.ChatRoom;
@@ -36,114 +35,171 @@ public class ChatHandler extends TextWebSocketHandler {
     private final ChatRoomRepository chatRoomRepository;
     private final UserRepository userRepository;
 
+    private void processJoin(WebSocketSession session, JSONObject payload) throws Exception {
+        String token = payload.getString("token");
+        if (!jwtTokenProvider.validateToken(token)) {
+            deleteUserSession(session);
+            System.out.println("Token is not validate");
+            return;
+        }
+        String userId = jwtTokenProvider.getUserId(token);
+
+        String userName = payload.getString("name");
+
+        UserInfo userInfo = new UserInfo(token, userId, userName, session);
+        userMap.put(userId, userInfo);
+    }
+
+    private void processEnter(WebSocketSession session, JSONObject payload) throws Exception {
+        String token = payload.getString("token");
+        if (!jwtTokenProvider.validateToken(token)) {
+            deleteUserSession(session);
+            System.out.println("Token is not validate");
+            return;
+        }
+        String userId = jwtTokenProvider.getUserId(token);
+        UserInfo userInfo = userMap.get(userId);
+
+        String oldRoomId = userInfo.getRoomId();
+        if (oldRoomId != null) {
+            roomMemberMap.get(oldRoomId).remove(userId);
+        }
+
+        String roomId = payload.getString("roomId");
+        List<String> memberList = roomMemberMap.getOrDefault(roomId, null);
+        if (memberList == null) {
+            memberList = new ArrayList<>();
+        }
+
+        if (!memberList.contains(userId))
+            memberList.add(userId);
+
+        userInfo.setRoomId(roomId);
+        roomMemberMap.put(roomId, memberList);
+
+        JSONObject resultMsg = new JSONObject();
+        resultMsg.put("type", "Entered");
+        resultMsg.put("userId", userId);
+        resultMsg.put("msg", "Someone Entered");
+        TextMessage msg = new TextMessage(resultMsg.toString().getBytes());
+
+        broadCastMsg(roomId, msg);
+    }
+
+    private void processOfferAnswer(WebSocketSession session, JSONObject payload) throws Exception {
+        String token = payload.getString("token");
+        if (!jwtTokenProvider.validateToken(token)) {
+            deleteUserSession(session);
+            System.out.println("Token is not validate");
+            return;
+        }
+
+        String roomId = payload.getString("roomId");
+        if(!roomMemberMap.containsKey(roomId)) {
+            System.out.println("Not Found Room Id");
+            return;
+        }
+
+        List<String> memberList = roomMemberMap.get(roomId);
+
+        String userId = jwtTokenProvider.getUserId(token);
+        String targetId = payload.getString("target");
+        if(!memberList.contains(userId) || !memberList.contains(targetId)) {
+            System.out.println("Not Equal Room");
+        }
+
+        UserInfo userInfo = userMap.get(targetId);
+
+
+        String type = payload.getString("type");
+
+        JSONObject resultMsg = new JSONObject();
+        resultMsg.put("type", type);
+        resultMsg.put("userId", userInfo.getUserId());
+        if(type.equals("Offer")) {
+            resultMsg.put("offer", payload.getJSONObject("offer"));
+        } else {
+            resultMsg.put("answer", payload.getJSONObject("answer"));
+        }
+        TextMessage msg = new TextMessage(resultMsg.toString().getBytes());
+        userInfo.getSession().sendMessage(msg);
+    }
+
+    private void processChat(WebSocketSession session, JSONObject payload) throws Exception {
+        String token = payload.getString("token");
+        if (!jwtTokenProvider.validateToken(token)) {
+            deleteUserSession(session);
+            System.out.println("Token is not validate");
+            return;
+        }
+
+        String roomId = payload.getString("room");
+        Optional<ChatRoom> chatRoom = chatRoomRepository.findById(roomId);
+        if (!chatRoom.isPresent()) {
+            deleteUserSession(session);
+            System.out.println("can not find room");
+            return;
+        }
+
+        String senderId = jwtTokenProvider.getUserId(token);
+        Optional<User> sender = userRepository.findByUsername(senderId);
+        if (!sender.isPresent()) {
+            deleteUserSession(session);
+            System.out.println("can not find user");
+            return;
+        }
+
+        String sendTImeStr = payload.getString("time");
+        Date sendTime = DT.parse(sendTImeStr);
+
+        Chat chat = Chat.builder()
+                .roomInfo(chatRoom.get())
+                .sender(sender.get())
+                .sendTime(sendTime)
+                .chat(payload.getString("msg"))
+                .build();
+        long chatId = chatRepository.save(chat).getId();
+
+        JSONObject resultMsg = new JSONObject();
+        resultMsg.put("type", "Chat");
+        resultMsg.put("id", chatId);
+        resultMsg.put("roomId", roomId);
+        resultMsg.put("senderId", senderId);
+        resultMsg.put("profile", "");
+        resultMsg.put("sender", sender.get().getNickname());
+        resultMsg.put("sendTime", sendTImeStr);
+        resultMsg.put("msg", payload.getString("msg"));
+        TextMessage msg = new TextMessage(resultMsg.toString().getBytes());
+        broadCastMsg(roomId, msg);
+    }
+
     @Override
-    protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
-        JSONObject payload = new JSONObject(message.getPayload());
-        if (!payload.has("type")) return;
-
+    protected void handleTextMessage(WebSocketSession session, TextMessage message) {
         try {
+            JSONObject payload = new JSONObject(message.getPayload());
+            if (!payload.has("type")) return;
+
             switch (payload.getString("type")) {
-                case "Join": {
-                    String token = payload.getString("token");
-                    if (!jwtTokenProvider.validateToken(token)) {
-                        deleteUserSession(session);
-                        System.out.println("Token is not validate");
-                        return;
-                    }
-                    String userId = jwtTokenProvider.getUserId(token);
-
-                    String userName = payload.getString("name");
-
-                    UserInfo userInfo = new UserInfo(token, userId, userName, session);
-                    userMap.put(userId, userInfo);
+                case "Join":
+                    processJoin(session, payload);
                     break;
-                }
-                case "Enter": { // 채팅방 접속할 때 사용
-                    String token = payload.getString("token");
-                    if (!jwtTokenProvider.validateToken(token)) {
-                        deleteUserSession(session);
-                        System.out.println("Token is not validate");
-                        return;
-                    }
-                    String userId = jwtTokenProvider.getUserId(token);
-                    UserInfo userInfo = userMap.get(userId);
-
-                    String oldRoomId = userInfo.getRoomId();
-                    if (oldRoomId != null) {
-                        roomMemberMap.get(oldRoomId).remove(userId);
-                    }
-
-                    String roomId = payload.getString("roomId");
-                    List<String> memberList = roomMemberMap.getOrDefault(roomId, null);
-                    if (memberList == null) {
-                        memberList = new ArrayList<>();
-                    }
-
-                    if(!memberList.contains(userId))
-                        memberList.add(userId);
-
-                    userInfo.setRoomId(roomId);
-                    roomMemberMap.put(roomId, memberList);
-
-                    JSONObject resultMsg = new JSONObject();
-                    resultMsg.put("type", "Entered");
-                    resultMsg.put("msg", "Someone Entered");
-                    TextMessage msg = new TextMessage(resultMsg.toString().getBytes());
-
-                    broadCastMsg(roomId, msg);
+                case "Enter":  // 채팅방 접속할 때 사용
+                    processEnter(session, payload);
                     break;
-                }
-                case "Chat": {
-                    String token = payload.getString("token");
-                    if (!jwtTokenProvider.validateToken(token)) {
-                        deleteUserSession(session);
-                        System.out.println("Token is not validate");
-                        return;
-                    }
-
-                    String roomId = payload.getString("room");
-                    Optional<ChatRoom> chatRoom = chatRoomRepository.findById(roomId);
-                    if (!chatRoom.isPresent()) {
-                        deleteUserSession(session);
-                        System.out.println("can not find room");
-                        return;
-                    }
-
-                    String senderId = jwtTokenProvider.getUserId(token);
-                    Optional<User> sender = userRepository.findByUsername(senderId);
-                    if (!sender.isPresent()) {
-                        deleteUserSession(session);
-                        System.out.println("can not find user");
-                        return;
-                    }
-
-                    String sendTImeStr = payload.getString("time");
-                    Date sendTime = DT.parse(sendTImeStr);
-
-                    Chat chat = Chat.builder()
-                            .roomInfo(chatRoom.get())
-                            .sender(sender.get())
-                            .sendTime(sendTime)
-                            .chat(payload.getString("msg"))
-                            .build();
-                    long chatId = chatRepository.save(chat).getId();
-
-                    JSONObject resultMsg = new JSONObject();
-                    resultMsg.put("type", "Chat");
-                    resultMsg.put("id", chatId);
-                    resultMsg.put("roomId", roomId);
-                    resultMsg.put("senderId", senderId);
-                    resultMsg.put("profile", "");
-                    resultMsg.put("sender", sender.get().getNickname());
-                    resultMsg.put("sendTime", sendTImeStr);
-                    resultMsg.put("msg", payload.getString("msg"));
-                    TextMessage msg = new TextMessage(resultMsg.toString().getBytes());
-                    broadCastMsg(roomId, msg);
+                case "Chat":
+                    processChat(session, payload);
                     break;
-                }
+                case "Offer":
+                case "Answer":
+                    processOfferAnswer(session, payload);
+                    break;
+                default:
+                    System.out.println("Unknown Type : " + payload.get("type"));
+                    break;
             }
         } catch (Exception ex) {
-            System.out.println("handleTextMessage" + ex.getMessage());
+            ex.printStackTrace();
+            System.out.println("handleTextMessage : " + ex.getMessage());
         }
     }
 

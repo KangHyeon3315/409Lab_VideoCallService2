@@ -1,53 +1,13 @@
-import React, { useEffect, useState, useRef } from "react"
+import React, { useEffect, useRef } from "react"
 import './VideoCall.css'
 
 export default function VideoCall(props) {
-    const [myStream, setMyStream] = useState(null);
-    const [camId, setCamId] = useState("default");
-    const [micId, setMicId] = useState("default");
-
     const videoRef = useRef([]);
 
-
     useEffect(() => {
-        const getMedia = async (camId, micId) => {
-            try {
-                
-                if(myStream) myStream.getTracks().forEach((track) => track.stop())
-
-                let newMyStream = await navigator.mediaDevices.getUserMedia({
-                    audio: { deviceId: micId },
-                    video: { deviceId: camId },
-                });
-
-                newMyStream.getAudioTracks().forEach((track) => (track.enabled = props.audioEnabled))
-                newMyStream.getVideoTracks().forEach((track) => (track.enabled = props.cameraEnabled))
-
-                setMyStream(newMyStream);
-
-                setCamId(camId)
-                setMicId(micId)
-
-                videoRef.current[0].srcObject = newMyStream;
-            } catch (ex) {
-                console.log(ex);
-            }
-        }
-
-        if (myStream === null && (props.cameraEnabled || props.audioEnabled)) {
-            getMedia(camId, micId);
-        } else if (myStream !== null && !props.cameraEnabled && !props.audioEnabled) {
-            myStream.getTracks().forEach((track) => track.stop())
-            videoRef.current[0].srcObject = null;
-            setMyStream(null);
-        } else if (myStream !== null && (props.MicId !== micId || props.CamId !== camId)) {
-            getMedia(props.CamId, props.MicId);
-        } else if (myStream) {
-            myStream.getAudioTracks().forEach((track) => (track.enabled = props.audioEnabled))
-            myStream.getVideoTracks().forEach((track) => (track.enabled = props.cameraEnabled))
-        }
-
-    }, [myStream, props.cameraEnabled, props.audioEnabled, props.MicId, props.CamId, camId, micId])
+        if(props.myStream) videoRef.current[0].srcObject = props.myStream;
+        else videoRef.current[0].srcObject = null;
+    }, [props.myStream])
 
     let videoList = [];
     for (let i = 0; i < 9; i++) {

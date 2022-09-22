@@ -37,7 +37,7 @@ function ListViewer(props) {
         axios.delete('/api/user/friend', {
             headers: { "X-AUTH-TOKEN": sessionStorage.getItem('token'), },
             params: {
-                userId: sessionStorage.getItem('username'),
+                userId: sessionStorage.getItem('userId'),
                 friendKey: friendInfo.id
             }
         }).then(res => {
@@ -60,7 +60,7 @@ function ListViewer(props) {
         axios.delete('/api/chat/exit', {
             headers: { "X-AUTH-TOKEN": sessionStorage.getItem('token'), },
             params: {
-                userId: sessionStorage.getItem('username'),
+                userId: sessionStorage.getItem('userId'),
                 chatId: roomInfo.chatId
             }
         }).then(res => {
@@ -84,7 +84,7 @@ function ListViewer(props) {
             headers: { "X-AUTH-TOKEN": sessionStorage.getItem('token'), },
             params: {
                 title: inputTitle,
-                userIds: [sessionStorage.getItem('username')].concat(selectedUsers),
+                userIds: [sessionStorage.getItem('userId')].concat(selectedUsers),
             }
         })
             .then(res => {
@@ -106,7 +106,7 @@ function ListViewer(props) {
         axios.post('/api/user/friend', null, {
             headers: { "X-AUTH-TOKEN": sessionStorage.getItem('token'), },
             params: {
-                userId: sessionStorage.getItem('username'),
+                userId: sessionStorage.getItem('userId'),
                 friendId: inputedFriendId
             }
         }).then(res => {

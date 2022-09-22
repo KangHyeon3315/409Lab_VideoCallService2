@@ -22,6 +22,8 @@ export default function Contents(props) {
     const [MicId, setMicId] = useState("default");
     const [useCam, setUsecam] = useState(false);
     const [CamId, setCamId] = useState("default");
+    const [myStream, setMyStream] = useState(null);
+
     const [chatEnable, setChatEnable] = useState(false);
     const [memberEnable, setMemberEnable] = useState(false);
 
@@ -38,6 +40,9 @@ export default function Contents(props) {
     const [memberIds, setMemberIds] = useState([]);
     const [selectedInviteMemberId, setSelectedInviteMemberId] = useState([]);
 
+    const [myPeerConnection, setMyPeerConnection] = useState(null);
+    const [trackSenders, setTrackSenders] = useState([]);
+
     const getTimeStr = () => {
         var today = new Date();
         today.setHours(today.getHours() + 9);
@@ -45,21 +50,20 @@ export default function Contents(props) {
     }
 
     const SendMsg = (msg) => {
-        if (isConnected) {
-            console.log("Send")
-            ws.current.send(
-                JSON.stringify(
-                    {
-                        type: "Chat",
-                        token: sessionStorage.getItem("token"),
-                        room: roomId,
-                        time: getTimeStr(),
-                        msg: msg
-                    }
-                )
-            )
-        }
+        SendData({
+            type: "Chat",
+            token: sessionStorage.getItem("token"),
+            room: roomId,
+            time: getTimeStr(),
+            msg: msg
+        })
     }
+
+    const SendData = useCallback((data) => {
+        if (ws.current && isConnected && roomId) {
+            ws.current.send(JSON.stringify(data));
+        }
+    }, [isConnected, roomId])
 
     const InviteMember = () => {
         axios.post('/api/chat/invite', null, {
@@ -98,6 +102,110 @@ export default function Contents(props) {
         setChatCmpList(chatList)
     }, [chatCmpList])
 
+    const enterRecv = useCallback(async (memberId) => {
+        const offer = await myPeerConnection.createOffer();
+        myPeerConnection.setLocalDescription(offer);
+        console.log("Send Offer");
+        SendData({
+            type: "Offer",
+            token: sessionStorage.getItem("token"),
+            offer: offer,
+            roomId: roomId,
+            target: memberId,
+        })
+    }, [myPeerConnection, SendData, roomId])
+
+    const offerRecv = useCallback(async (data) => {
+        const offer = data.offer;
+        const targetId = data.userId;
+
+        console.log("Recv Offer")
+        myPeerConnection.setRemoteDescription(offer);
+        const answer = await myPeerConnection.createAnswer();
+        myPeerConnection.setLocalDescription(answer);
+
+        SendData({
+            type: "Answer",
+            token: sessionStorage.getItem("token"),
+            answer: answer,
+            roomId: roomId,
+            target: targetId,
+        })
+        console.log("Send To Answer")
+        
+    }, [myPeerConnection, SendData, roomId])
+
+    const answerRecv = useCallback(async (data) => {
+        const answer = data.answer;
+
+        myPeerConnection.setRemoteDescription(answer);
+        console.log("Recv Answer");
+    }, [myPeerConnection])
+
+    const stopMyStream = useCallback(() => {
+        if (myStream) myStream.getTracks().forEach((track) => { track.stop() })
+        setMyStream(null);
+    }, [myStream])
+
+    const clearRTCStream = useCallback(() => {
+        if (myPeerConnection) {
+            trackSenders.forEach(sender => {
+                myPeerConnection.removeTrack(sender);
+            })
+            setTrackSenders([]);
+        }
+    }, [myPeerConnection, trackSenders, setTrackSenders])
+
+    const getMediaStream = useCallback(async (camId, micId) => {
+        try {
+            stopMyStream();
+
+            let newMyStream = await navigator.mediaDevices.getUserMedia({
+                audio: { deviceId: micId },
+                video: { deviceId: camId },
+            });
+
+            newMyStream.getAudioTracks().forEach((track) => (track.enabled = useMic))
+            newMyStream.getVideoTracks().forEach((track) => (track.enabled = useCam))
+
+            clearRTCStream();
+            let senders = [];
+            newMyStream.getTracks().forEach((track) => {
+                const sender = myPeerConnection.addTrack(track, newMyStream)
+                senders.push(sender);
+            })
+            setTrackSenders(senders);
+
+            setMyStream(newMyStream);
+        } catch (ex) {
+            console.log(ex);
+        }
+    }, [stopMyStream, clearRTCStream, myPeerConnection, useCam, useMic])
+
+    useEffect(() => {
+        if (mode !== "VideoCall") {
+            if (myStream) stopMyStream();
+            return;
+        }
+
+        if (!myPeerConnection) {
+            let conn = new RTCPeerConnection();
+            console.log("Conn Created")
+            setMyPeerConnection(conn);
+        }
+
+
+        if (myStream === null && (useCam || useMic)) {
+            getMediaStream(CamId, MicId);
+        } else if (myStream !== null && !(useCam || useMic)) {
+            stopMyStream();
+        } else if (myStream) {
+            myStream.getAudioTracks().forEach((track) => (track.enabled = useMic))
+            myStream.getVideoTracks().forEach((track) => (track.enabled = useCam))
+        }
+
+    }, [mode, myStream, useCam, CamId, useMic, MicId, myPeerConnection, getMediaStream, stopMyStream])
+
     useEffect(() => {
         if (!ws.current) {
             ws.current = new WebSocket("ws://localhost:8080/ws/chat");
@@ -115,84 +223,94 @@ export default function Contents(props) {
         }
 
         ws.current.onmessage = (evt) => {
-            console.log("Recv")
             const data = JSON.parse(evt.data);
             const type = data.type;
 
             if (type === "Chat") {
                 chatRecv(data);
+            } else if(type === "Entered"){
+                const userId = data.userId;
+                if(userId === sessionStorage.getItem("userId")) return;
+                enterRecv(userId);
+            } else if(type === "Offer") {
+                offerRecv(data)
+            } else if(type === "Answer") {
+                answerRecv(data);
+            } else {
+                console.log(data);
             }
         }
-    }, [chatRecv])
+    }, [chatRecv, enterRecv, offerRecv, answerRecv])
 
     useEffect(() => {
-        if (ws.current && isConnected && roomId) {
-            ws.current.send(JSON.stringify({
-                type: "Enter",
-                token: sessionStorage.getItem("token"),
-                roomId: roomId,
-            }))
-        }
+        SendData({
+            type: "Enter",
+            token: sessionStorage.getItem("token"),
+            roomId: roomId,
+        })
+    }, [SendData, roomId, isConnected])
 
-    }, [roomId, isConnected])
+    const getChatInfo = useCallback(async () => {
+        try {
+            const token = sessionStorage.getItem('token');
+            if (token === null || token === '') { navigate('/signin'); return; }
+            if (roomId === undefined) return;
 
-
-    useEffect(() => {
-        const token = sessionStorage.getItem('token');
-        if (token === null || token === '') { navigate('/signin'); return; }
-
-        if (roomId !== undefined) {
             const userId = sessionStorage.getItem('userId');
 
-            axios.get("/api/chat/info", {
+            const res = await axios.get("/api/chat/info", {
                 headers: { "X-AUTH-TOKEN": sessionStorage.getItem('token'), },
                 params: {
                     userId: userId,
                     chatId: roomId,
                 }
-            }).then(res => {
-                if (res.status === 403) navigate('/signin')
-
-                if (res.data.result) {
-                    setRoomTitle(res.data.title);
-
-                    let memberIdList = [];
-                    res.data.members.forEach(memberInfo => {
-                        memberIdList.push(memberInfo.userId);
-                    })
-
-                    setChatEnable(true);
-                    setMemberIds(memberIdList);
-                    setMembers(res.data.members);
-
-                    let chatList = [];
-                    res.data.chatList.forEach(chatInfo => {
-                        chatList.push(
-                            <ChatCell
-                                key={chatInfo.id}
-                                myChat={chatInfo.senderId === userId}
-                                profile={chatInfo.profile}
-                                sender={chatInfo.sender}
-                                time={chatInfo.sendTime}
-                                msg={chatInfo.msg}
-                            />
-                        )
-                    })
-
-                    setChatCmpList(chatList);
-                } else {
-                    alert(res.data.msg);
-                }
-            }).catch(ex => {
-                console.log(ex)
-                if (ex.response.status === 403) navigate('/signin')
             })
+            if (res.status === 403) navigate('/signin')
+
+            if (!res.data.result) alert(res.data.msg);
+
+            setRoomTitle(res.data.title);
+
+            let memberIdList = [];
+            res.data.members.forEach(memberInfo => {
+                memberIdList.push(memberInfo.userId);
+            })
+
+            setChatEnable(true);
+            setMemberIds(memberIdList);
+            setMembers(res.data.members);
+
+            let chatList = [];
+            res.data.chatList.forEach(chatInfo => {
+                chatList.push(
+                    <ChatCell
+                        key={chatInfo.id}
+                        myChat={chatInfo.senderId === userId}
+                        profile={chatInfo.profile}
+                        sender={chatInfo.sender}
+                        time={chatInfo.sendTime}
+                        msg={chatInfo.msg}
+                    />
+                )
+            })
+
+            setChatCmpList(chatList);
+
+        } catch (ex) {
+            console.log(ex)
+            if (ex.response.status === 403) navigate('/signin')
         }
-    }, [navigate, roomId]);
+    }, [navigate, roomId])
 
-    let inviteList = [];
 
-    if (props.userInfo) {
+    useEffect(() => {
+        getChatInfo();
+    }, [getChatInfo]);
+
+    const getInviteList = () => {
+        let inviteList = [];
+        if (!props.userInfo) return inviteList;
+
         props.userInfo.friends.forEach(friend => {
             if (!memberIds.includes(friend.id)) {
                 inviteList.push(
@@ -218,81 +336,83 @@ export default function Contents(props) {
                 )
             }
         })
+        return inviteList;
     }
 
-    let MemberCmp = <Member MemberList={members} />
-    let ChatCmp = <Chat ChatCmpList={chatCmpList} SendMsg={SendMsg} scrollBottom={autoScroll} />
+    const getContentsCmp = () => {
+        let MemberCmp = <Member MemberList={members} />
+        let ChatCmp = <Chat ChatCmpList={chatCmpList} SendMsg={SendMsg} scrollBottom={autoScroll} />
 
-    let SideContents = null;
-    if (mode !== null && (chatEnable || memberEnable)) {
-        if (chatEnable && memberEnable) {
+        let SideContents = null;
+        if (mode !== null && (chatEnable || memberEnable)) {
+            if (chatEnable && memberEnable) {
+                SideContents = (
+                    <div className='SideWrap'>
+                        <div className='HarfSideSection'>
+                            {MemberCmp}
+                        </div>
+                        <div className='HorizontalLine' />
+                        <div className='HarfSideSection'>
+                            {ChatCmp}
+                        </div>
+                    </div>
+                )
+
+            } else {
+                SideContents = (
+                    <div className='SideWrap'>
+                        {chatEnable ? ChatCmp : MemberCmp}
+                    </div>
+                )
+            }
+
+        } else if (mode === null && chatEnable && memberEnable) {
             SideContents = (
                 <div className='SideWrap'>
-                    <div className='HarfSideSection'>
-                        {MemberCmp}
-                    </div>
-                    <div className='HorizontalLine' />
-                    <div className='HarfSideSection'>
-                        {ChatCmp}
-                    </div>
-                </div>
-            )
-
-        } else {
-            SideContents = (
-                <div className='SideWrap'>
-                    {chatEnable ? ChatCmp : MemberCmp}
+                    {memberEnable ? MemberCmp : null}
                 </div>
             )
         }
 
-    } else if (mode === null && chatEnable && memberEnable) {
-        SideContents = (
-            <div className='SideWrap'>
-                {memberEnable ? MemberCmp : null}
-            </div>
-        )
+        let mainContents = null;
+        if (mode === "VideoCall") {
+            mainContents = (
+                <div className='MainContents'>
+                    <VideoCall
+                        myStream={myStream}
+                    />
+                </div>
+            )
+        } else if (mode === "Meta") {
+            mainContents = (
+                <div className='MainContents'>
+                    Meta
+                </div>
+            )
+        } else if (chatEnable) {
+            mainContents = (
+                <div className='MainContents'>
+                    {ChatCmp}
+                </div>
+            )
+        }
+
+        let Contents;
+        if (roomId === undefined) {
+            Contents = <div className='ContentsBody'> 채팅방을 선택하세요 </div>
+        } else {
+            Contents = (
+                <div className='ContentsBody'>
+                    {mainContents}
+                    {SideContents ? <div className='VerticalLine' /> : null}
+                    {SideContents}
+                </div>
+            )
+        }
+
+        return Contents;
     }
 
-    let mainContents = null;
-    if (mode === "VideoCall") {
-        mainContents = (
-            <div className='MainContents'>
-                <VideoCall
-                    CamId={CamId}
-                    MicId={MicId}
-                    audioEnabled={useMic}
-                    cameraEnabled={useCam}
-                    MemberList={members}
-                />
-            </div>
-        )
-    } else if (mode === "Meta") {
-        mainContents = (
-            <div className='MainContents'>
-                Meta
-            </div>
-        )
-    } else if (chatEnable) {
-        mainContents = (
-            <div className='MainContents'>
-                {ChatCmp}
-            </div>
-        )
-    }
-
-    let Contents;
-    if (roomId === undefined) {
-        Contents = <div className='ContentsBody'> 채팅방을 선택하세요 </div>
-    } else {
-        Contents = (
-            <div className='ContentsBody'>
-                {mainContents}
-                {SideContents ? <div className='VerticalLine' /> : null}
-                {SideContents}
-            </div>
-        )
-    }
 
     return (
         <div id="ContentsWrap">
@@ -355,7 +475,7 @@ export default function Contents(props) {
                             <h3>초대할 멤버를 선택하세요</h3>
                         </div>
                         <div className='inviteListWrap'>
-                            {inviteList}
+                            {getInviteList()}
                         </div>
                         <button className='InviteBtn' onClick={InviteMember}>초대하기</button>
                     </div>
@@ -366,14 +486,16 @@ export default function Contents(props) {
                     DeviceChanged={(deviceType, deviceId) => {
                         if (deviceType === "Cam") {
                             setCamId(deviceId);
+                            getMediaStream(deviceId, MicId);
                         } else {
                             setMicId(deviceId);
+                            getMediaStream(CamId, deviceId);
                         }
                     }}
                 />
 
             </div>
-            {Contents}
+            {getContentsCmp()}
         </div>
     )
 }
