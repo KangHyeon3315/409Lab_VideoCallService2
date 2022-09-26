@@ -83,7 +83,7 @@ public class ChatHandler extends TextWebSocketHandler {
         resultMsg.put("msg", "Someone Entered");
         TextMessage msg = new TextMessage(resultMsg.toString().getBytes());
 
-        broadCastMsg(roomId, msg);
+        broadCastMsg(roomId, msg, userId);
     }
 
     private void processOfferAnswer(WebSocketSession session, JSONObject payload) throws Exception {
@@ -115,14 +115,20 @@ public class ChatHandler extends TextWebSocketHandler {
 
         JSONObject resultMsg = new JSONObject();
         resultMsg.put("type", type);
-        resultMsg.put("userId", userInfo.getUserId());
+        resultMsg.put("userId", userId);
+        resultMsg.put("targetId", userInfo.getUserId());
         if(type.equals("Offer")) {
             resultMsg.put("offer", payload.getJSONObject("offer"));
         } else {
             resultMsg.put("answer", payload.getJSONObject("answer"));
         }
         TextMessage msg = new TextMessage(resultMsg.toString().getBytes());
-        userInfo.getSession().sendMessage(msg);
+
+        WebSocketSession targetSession = userInfo.getSession();
+        synchronized (targetSession) {
+            targetSession.sendMessage(msg);
+        }
+
     }
 
     private void processChat(WebSocketSession session, JSONObject payload) throws Exception {
@@ -204,7 +210,12 @@ public class ChatHandler extends TextWebSocketHandler {
     }
 
     private void broadCastMsg(String roomId, TextMessage msg) throws IOException {
+        broadCastMsg(roomId, msg, "");
+    }
+
+    private void broadCastMsg(String roomId, TextMessage msg, String ExcludeId) throws IOException {
         for (String memberId : roomMemberMap.get(roomId)) {
+            if(memberId.equals(ExcludeId)) continue;
 
             UserInfo memberInfo = userMap.getOrDefault(memberId, null);
             if (memberInfo == null) continue;

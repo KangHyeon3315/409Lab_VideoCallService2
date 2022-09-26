@@ -40,8 +40,8 @@ export default function Contents(props) {
     const [memberIds, setMemberIds] = useState([]);
     const [selectedInviteMemberId, setSelectedInviteMemberId] = useState([]);
 
-    const [myPeerConnection, setMyPeerConnection] = useState(null);
-    const [trackSenders, setTrackSenders] = useState([]);
+    const PeerConn = useRef({});
+    // const [trackSenders, setTrackSenders] = useState([]);
 
     const getTimeStr = () => {
         var today = new Date();
@@ -62,6 +62,9 @@ export default function Contents(props) {
     const SendData = useCallback((data) => {
         if (ws.current && isConnected && roomId) {
             ws.current.send(JSON.stringify(data));
+            return true;
+        } else {
+            return false;
         }
     }, [isConnected, roomId])
 
@@ -102,63 +105,9 @@ export default function Contents(props) {
         setChatCmpList(chatList)
     }, [chatCmpList])
 
-    const enterRecv = useCallback(async (memberId) => {
-        const offer = await myPeerConnection.createOffer();
-        myPeerConnection.setLocalDescription(offer);
-        console.log("Send Offer");
-        SendData({
-            type: "Offer",
-            token: sessionStorage.getItem("token"),
-            offer: offer,
-            roomId: roomId,
-            target: memberId,
-        })
-    }, [myPeerConnection, SendData, roomId])
-
-    const offerRecv = useCallback(async (data) => {
-        const offer = data.offer;
-        const targetId = data.userId;
-
-        console.log("Recv Offer")
-        myPeerConnection.setRemoteDescription(offer);
-        const answer = await myPeerConnection.createAnswer();
-        myPeerConnection.setLocalDescription(answer);
-
-        SendData({
-            type: "Answer",
-            token: sessionStorage.getItem("token"),
-            answer: answer,
-            roomId: roomId,
-            target: targetId,
-        })
-        console.log("Send To Answer")
-        
-    }, [myPeerConnection, SendData, roomId])
-
-    const answerRecv = useCallback(async (data) => {
-        const answer = data.answer;
-
-        myPeerConnection.setRemoteDescription(answer);
-        console.log("Recv Answer");
-    }, [myPeerConnection])
-
-    const stopMyStream = useCallback(() => {
-        if (myStream) myStream.getTracks().forEach((track) => { track.stop() })
-        setMyStream(null);
-    }, [myStream])
-
-    const clearRTCStream = useCallback(() => {
-        if (myPeerConnection) {
-            trackSenders.forEach(sender => {
-                myPeerConnection.removeTrack(sender);
-            })
-            setTrackSenders([]);
-        }
-    }, [myPeerConnection, trackSenders, setTrackSenders])
-
     const getMediaStream = useCallback(async (camId, micId) => {
         try {
-            stopMyStream();
+            if (myStream) myStream.getTracks().forEach((track) => { track.stop() })
 
             let newMyStream = await navigator.mediaDevices.getUserMedia({
                 audio: { deviceId: micId },
@@ -168,43 +117,128 @@ export default function Contents(props) {
             newMyStream.getAudioTracks().forEach((track) => (track.enabled = useMic))
             newMyStream.getVideoTracks().forEach((track) => (track.enabled = useCam))
 
-            clearRTCStream();
+            // clearRTCStream();
+            /*
             let senders = [];
             newMyStream.getTracks().forEach((track) => {
                 const sender = myPeerConnection.addTrack(track, newMyStream)
                 senders.push(sender);
             })
             setTrackSenders(senders);
-
+            */
+            console.log("MediaStream Created")
             setMyStream(newMyStream);
         } catch (ex) {
             console.log(ex);
         }
-    }, [stopMyStream, clearRTCStream, myPeerConnection, useCam, useMic])
+    }, [myStream, useCam, useMic])
 
     useEffect(() => {
         if (mode !== "VideoCall") {
-            if (myStream) stopMyStream();
+            if (myStream) myStream.getTracks().forEach((track) => { track.stop() })
             return;
         }
-
-        if (!myPeerConnection) {
-            let conn = new RTCPeerConnection();
-            console.log("Conn Created")
-            setMyPeerConnection(conn);
-        }
-
 
         if (myStream === null && (useCam || useMic)) {
             getMediaStream(CamId, MicId);
         } else if (myStream !== null && !(useCam || useMic)) {
-            stopMyStream();
+            myStream.getTracks().forEach((track) => { track.stop() })
+            setMyStream(null);
         } else if (myStream) {
             myStream.getAudioTracks().forEach((track) => (track.enabled = useMic))
             myStream.getVideoTracks().forEach((track) => (track.enabled = useCam))
         }
 
-    }, [mode, myStream, useCam, CamId, useMic, MicId, myPeerConnection, getMediaStream, stopMyStream])
+    }, [mode, myStream, useCam, CamId, useMic, MicId, getMediaStream])
+
+    const handleIce = (data) => {
+        console.log("============ got ice candidate ============");
+        console.log(data);
+    }
+
+    const enteredRecv = useCallback(async (memberId) => {
+        PeerConn.current[memberId] = new RTCPeerConnection();
+        PeerConn.current[memberId].onicecandidate = (e) => {
+            console.log("onIceCnadidate")
+        }
+        
+        PeerConn.current[memberId].oniceconnectionstatechange = (e) => {
+            console.log(e)
+        }
+
+        if(myStream)
+            myStream.getTracks().forEach((track) => PeerConn.current[memberId].addTrack(track, myStream))
+        console.log("RTCPeerConnection Created")
+        
+        console.log("Recv Entered")
+        const offer = await PeerConn.current[memberId].createOffer();
+
+        PeerConn.current[memberId].setLocalDescription(offer);
+        console.log("Send My Offer");
+        SendData({
+            type: "Offer",
+            token: sessionStorage.getItem("token"),
+            offer: offer,
+            roomId: roomId,
+            target: memberId,
+        })
+    }, [roomId, SendData, handleIce])
+
+    const offerRecv = useCallback(async (data) => {        
+        const offer = data.offer;
+        const targetId = data.userId;
+
+        PeerConn.current[targetId] = new RTCPeerConnection();
+        
+        PeerConn.current[targetId].onicecandidate =  (e) => {
+            console.log("===================== ice candidate")
+        };
+        if(myStream)
+            myStream.getTracks().forEach((track) => PeerConn.current[targetId].addTrack(track, myStream))
+        console.log("RTCPeerConnection Created")
+
+        console.log("Recv Target Offer")
+        await PeerConn.current[targetId].setRemoteDescription(offer);
+        let answer = await PeerConn.current[targetId].createAnswer();
+        await PeerConn.current[targetId].setLocalDescription(answer);
+        console.log("Send My Answer")
+        SendData({
+            type: "Answer",
+            token: sessionStorage.getItem("token"),
+            answer: answer,
+            roomId: roomId,
+            target: targetId,
+        })
+
+    }, [SendData, roomId, handleIce])
+
+    const answerRecv = useCallback(async (data) => {
+        const answer = data.answer;
+        const targetId = data.userId;
+
+        console.log("Recv Answer"); 
+        PeerConn.current[targetId].setRemoteDescription(answer);
+        console.log(PeerConn.current[targetId])
+    }, [])
+
+    const RecvData = useCallback((data) => {
+        const type = data.type;
+
+        if (type === "Chat") {
+            chatRecv(data);
+        } else if (type === "Entered") {
+            const userId = data.userId;
+            if (userId === sessionStorage.getItem("userId")) return;
+            enteredRecv(userId);
+        } else if (type === "Offer") {
+            offerRecv(data)
+        } else if (type === "Answer") {
+            answerRecv(data);
+        } else {
+            console.log("Unkown Data Recv")
+            console.log(data);
+        }
+    }, [chatRecv, enteredRecv, offerRecv, answerRecv])
 
     useEffect(() => {
         if (!ws.current) {
@@ -221,34 +255,17 @@ export default function Contents(props) {
             ws.current.onclose = (err) => { setConnected(false); }
             ws.current.onerror = (err) => { }
         }
-
-        ws.current.onmessage = (evt) => {
-            const data = JSON.parse(evt.data);
-            const type = data.type;
-
-            if (type === "Chat") {
-                chatRecv(data);
-            } else if(type === "Entered"){
-                const userId = data.userId;
-                if(userId === sessionStorage.getItem("userId")) return;
-                enterRecv(userId);
-            } else if(type === "Offer") {
-                offerRecv(data)
-            } else if(type === "Answer") {
-                answerRecv(data);
-            } else {
-                console.log(data);
-            }
-        }
-    }, [chatRecv, enterRecv, offerRecv, answerRecv])
+        ws.current.onmessage = (evt) => { RecvData(JSON.parse(evt.data)) }
+    }, [RecvData])
 
     useEffect(() => {
-        SendData({
+        const result = SendData({
             type: "Enter",
             token: sessionStorage.getItem("token"),
             roomId: roomId,
         })
-    }, [SendData, roomId, isConnected])
+        if (result) console.log("Send Room Entered")
+    }, [roomId, SendData])
 
     const getChatInfo = useCallback(async () => {
         try {
