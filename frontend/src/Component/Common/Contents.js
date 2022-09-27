@@ -43,12 +43,14 @@ export default function Contents(props) {
     const PeerConn = useRef({});
     // const [trackSenders, setTrackSenders] = useState([]);
 
+    /** 현재 시간을 YYYY-MM-DD hh:mm:ss 형식으로 변환*/
     const getTimeStr = () => {
         var today = new Date();
         today.setHours(today.getHours() + 9);
         return today.toISOString().replace('T', ' ').substring(0, 19);
     }
 
+    /** 사용자가 입력한 채팅 문자열을 다른 유저들에게 Broadcasting */
     const SendMsg = (msg) => {
         SendData({
             type: "Chat",
@@ -59,6 +61,7 @@ export default function Contents(props) {
         })
     }
 
+    /** JSON 형식의 데이터를 서버에 WebSock 방식으로 전송 */
     const SendData = useCallback((data) => {
         if (ws.current && isConnected && roomId) {
             ws.current.send(JSON.stringify(data));
@@ -68,25 +71,26 @@ export default function Contents(props) {
         }
     }, [isConnected, roomId])
 
-    const InviteMember = () => {
-        axios.post('/api/chat/invite', null, {
+    /** 현재 채팅방에 새로운 Member 초대 */
+    const InviteMember = async () => {
+        const res = await axios.post('/api/chat/invite', null, {
             headers: { "X-AUTH-TOKEN": sessionStorage.getItem('token'), },
             params: {
                 chatId: roomId,
                 userIds: selectedInviteMemberId,
             }
         })
-            .then(res => {
-                if (res.data.result) {
-                    setMemberIds(memberIds.concat(selectedInviteMemberId))
-                    setSelectedInviteMemberId([]);
-                } else {
-                    alert(res.data.msg)
-                    return;
-                }
-            })
+
+        if (res.data.result) {
+            setMemberIds(memberIds.concat(selectedInviteMemberId))
+            setSelectedInviteMemberId([]);
+        } else {
+            alert(res.data.msg)
+            return;
+        }
     }
 
+    /** 채팅을 수신받은 경우 chatList에 Chat 정보를 Component로 추가 */
     const chatRecv = useCallback((data) => {
         const userId = sessionStorage.getItem('userId');
         let chatList = [...chatCmpList];
@@ -105,71 +109,56 @@ export default function Contents(props) {
         setChatCmpList(chatList)
     }, [chatCmpList])
 
+    /** Media Stream을 생성 */
     const getMediaStream = useCallback(async (camId, micId) => {
         try {
             if (myStream) myStream.getTracks().forEach((track) => { track.stop() })
 
             let newMyStream = await navigator.mediaDevices.getUserMedia({
-                audio: { deviceId: micId },
-                video: { deviceId: camId },
+                audio: { deviceId: micId === undefined ? MicId : micId },
+                video: { deviceId: camId === undefined ? CamId : camId },
             });
-
             newMyStream.getAudioTracks().forEach((track) => (track.enabled = useMic))
             newMyStream.getVideoTracks().forEach((track) => (track.enabled = useCam))
 
-            // clearRTCStream();
-            /*
-            let senders = [];
-            newMyStream.getTracks().forEach((track) => {
-                const sender = myPeerConnection.addTrack(track, newMyStream)
-                senders.push(sender);
-            })
-            setTrackSenders(senders);
-            */
             console.log("MediaStream Created")
             setMyStream(newMyStream);
         } catch (ex) {
             console.log(ex);
         }
-    }, [myStream, useCam, useMic])
+    }, [myStream, useCam, useMic, CamId, MicId])
 
     useEffect(() => {
-        if (mode !== "VideoCall") {
-            if (myStream) myStream.getTracks().forEach((track) => { track.stop() })
-            return;
-        }
-
-        if (myStream === null && (useCam || useMic)) {
-            getMediaStream(CamId, MicId);
-        } else if (myStream !== null && !(useCam || useMic)) {
+        // mode가 VideoCall이면서 myStream이 null인 경우 새로운 mediaStream 생성
+        // videoCall이 아닌데 mediaStream이 null이 아닌경우 Stream 중지
+        if (mode === "VideoCall" && myStream === null) {
+            getMediaStream();
+        } else if (mode !== "VideoCall" && myStream !== null) {
             myStream.getTracks().forEach((track) => { track.stop() })
-            setMyStream(null);
-        } else if (myStream) {
-            myStream.getAudioTracks().forEach((track) => (track.enabled = useMic))
-            myStream.getVideoTracks().forEach((track) => (track.enabled = useCam))
         }
+    }, [mode, myStream, getMediaStream])
 
-    }, [mode, myStream, useCam, CamId, useMic, MicId, getMediaStream])
+    useEffect(() => {
+        // mic및 cam 사용을 토글 하는 경우 mediaStream을 수정
+        if (myStream === null) return;
+        myStream.getAudioTracks().forEach((track) => (track.enabled = useMic))
+        myStream.getVideoTracks().forEach((track) => (track.enabled = useCam))
+    }, [myStream, useCam, useMic])
 
-    const handleIce = (data) => {
+    const handleIce = useCallback((data) => {
         console.log("============ got ice candidate ============");
         console.log(data);
-    }
+    }, [])
 
+    /** 새로운 유저가 접속했다고 수신받은 경우 Offer를 생성해 전송 */
     const enteredRecv = useCallback(async (memberId) => {
         PeerConn.current[memberId] = new RTCPeerConnection();
-        PeerConn.current[memberId].onicecandidate = (e) => {
-            console.log("onIceCnadidate")
-        }
-        
-        PeerConn.current[memberId].oniceconnectionstatechange = (e) => {
-            console.log(e)
-        }
-
-        if(myStream)
-            myStream.getTracks().forEach((track) => PeerConn.current[memberId].addTrack(track, myStream))
+        PeerConn.current[memberId].onicecandidate = handleIce;
         console.log("RTCPeerConnection Created")
-        
+
+        if (myStream)
+            myStream.getTracks().forEach((track) => PeerConn.current[memberId].addTrack(track, myStream))
+
         console.log("Recv Entered")
         const offer = await PeerConn.current[memberId].createOffer();
 
@@ -182,25 +171,26 @@ export default function Contents(props) {
             roomId: roomId,
             target: memberId,
         })
-    }, [roomId, SendData, handleIce])
+    }, [roomId, SendData, handleIce, myStream])
 
-    const offerRecv = useCallback(async (data) => {        
+    /** Offer를 수신받은 경우 Answer를 생성해 응답 */
+    const offerRecv = useCallback(async (data) => {
+
         const offer = data.offer;
         const targetId = data.userId;
 
         PeerConn.current[targetId] = new RTCPeerConnection();
-        
-        PeerConn.current[targetId].onicecandidate =  (e) => {
-            console.log("===================== ice candidate")
-        };
-        if(myStream)
-            myStream.getTracks().forEach((track) => PeerConn.current[targetId].addTrack(track, myStream))
+        PeerConn.current[targetId].onicecandidate = handleIce;
         console.log("RTCPeerConnection Created")
+        if (myStream)
+            myStream.getTracks().forEach((track) => PeerConn.current[targetId].addTrack(track, myStream))
+
 
         console.log("Recv Target Offer")
         await PeerConn.current[targetId].setRemoteDescription(offer);
         let answer = await PeerConn.current[targetId].createAnswer();
         await PeerConn.current[targetId].setLocalDescription(answer);
+
         console.log("Send My Answer")
         SendData({
             type: "Answer",
@@ -210,17 +200,18 @@ export default function Contents(props) {
             target: targetId,
         })
 
-    }, [SendData, roomId, handleIce])
+    }, [SendData, roomId, handleIce, myStream])
 
+    /** Answer를 수신받은 경우 처리 */
     const answerRecv = useCallback(async (data) => {
         const answer = data.answer;
         const targetId = data.userId;
 
-        console.log("Recv Answer"); 
+        console.log("Recv Answer");
         PeerConn.current[targetId].setRemoteDescription(answer);
-        console.log(PeerConn.current[targetId])
     }, [])
 
+    /** WebSocket에서 데이터를 수신받은 경우 데이터의 타입에 따라서 처리하는 메서드 호출 */
     const RecvData = useCallback((data) => {
         const type = data.type;
 
@@ -240,6 +231,7 @@ export default function Contents(props) {
         }
     }, [chatRecv, enteredRecv, offerRecv, answerRecv])
 
+    /** 컴포넌트가 처음 로드됐을 때 WebSocket 생성 */
     useEffect(() => {
         if (!ws.current) {
             ws.current = new WebSocket("ws://localhost:8080/ws/chat");
@@ -255,10 +247,12 @@ export default function Contents(props) {
             ws.current.onclose = (err) => { setConnected(false); }
             ws.current.onerror = (err) => { }
         }
-        ws.current.onmessage = (evt) => { RecvData(JSON.parse(evt.data)) }
+        ws.current.onmessage = (evt) => { RecvData(JSON.parse(evt.data)) } // RecvData가 업데이트 될 때 onmessage 이벤트를 다시 등록
     }, [RecvData])
 
+
     useEffect(() => {
+        // 새로운 room에 접속한 경우 자신이 접속했다는 정보를 서버에 전송
         const result = SendData({
             type: "Enter",
             token: sessionStorage.getItem("token"),
@@ -267,6 +261,7 @@ export default function Contents(props) {
         if (result) console.log("Send Room Entered")
     }, [roomId, SendData])
 
+    /** 서버에서 접속 전의 채팅 정보와 맴버 정보를 요청 후 업데이트 */
     const getChatInfo = useCallback(async () => {
         try {
             const token = sessionStorage.getItem('token');
@@ -282,9 +277,14 @@ export default function Contents(props) {
                     chatId: roomId,
                 }
             })
-            if (res.status === 403) navigate('/signin')
-
-            if (!res.data.result) alert(res.data.msg);
+            if (res.status === 403) {
+                navigate('/signin')
+                return;
+            }
+            if (!res.data.result) {
+                alert(res.data.msg);
+                return;
+            }
 
             setRoomTitle(res.data.title);
 
@@ -324,34 +324,35 @@ export default function Contents(props) {
         getChatInfo();
     }, [getChatInfo]);
 
+    /** 초대가 가능한 User 목록을 가져오기 */
     const getInviteList = () => {
         let inviteList = [];
         if (!props.userInfo) return inviteList;
 
         props.userInfo.friends.forEach(friend => {
-            if (!memberIds.includes(friend.id)) {
-                inviteList.push(
-                    <ListCell
-                        key={friend.id}
-                        title={friend.nickname}
-                        comment={friend.email}
-                        chatId={friend.chatId}
-                        selected={selectedInviteMemberId.includes(friend.id)}
-                        clicked={() => {
-                            const idx = selectedInviteMemberId.indexOf(friend.id)
-                            let memberList = [...selectedInviteMemberId];
-                            if (idx >= 0) {
-                                memberList.splice(idx, 1);
-                            } else {
-                                memberList.push(friend.id);
-                            }
-                            setSelectedInviteMemberId(memberList);
-                        }}
-                        deleteDisable={true}
-                    />
+            if (memberIds.includes(friend.id)) return;
+            inviteList.push(
+                <ListCell
+                    key={friend.id}
+                    title={friend.nickname}
+                    comment={friend.email}
+                    chatId={friend.chatId}
+                    selected={selectedInviteMemberId.includes(friend.id)}
+                    clicked={() => {
+                        const idx = selectedInviteMemberId.indexOf(friend.id)
+                        let memberList = [...selectedInviteMemberId];
+                        if (idx >= 0) {
+                            memberList.splice(idx, 1);
+                        } else {
+                            memberList.push(friend.id);
+                        }
+                        setSelectedInviteMemberId(memberList);
+                    }}
+                    deleteDisable={true}
+                />
 
-                )
-            }
+            )
+
         })
         return inviteList;
     }
