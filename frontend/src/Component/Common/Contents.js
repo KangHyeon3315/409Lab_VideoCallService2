@@ -146,18 +146,33 @@ export default function Contents(props) {
     }, [myStream, useCam, useMic])
 
     const handleIce = useCallback((data) => {
-        console.log("============ got ice candidate ============");
-        console.log(data);
+        console.log("got ice candidate");
+        SendData({
+            type: "Ice",
+            token: sessionStorage.getItem("token"),
+            ice: data.candidate,
+            roomId: roomId,
+        })
+    }, [SendData, roomId])
+
+    /** 상대의 Stream을 수신받았을 때 */
+    const handleAddStream = useCallback((data) => {
+        const stream = data.stream;
+
+        console.log("got peers stream. peers stream id : " + stream.id)
     }, [])
 
     /** 새로운 유저가 접속했다고 수신받은 경우 Offer를 생성해 전송 */
     const enteredRecv = useCallback(async (memberId) => {
         PeerConn.current[memberId] = new RTCPeerConnection();
         PeerConn.current[memberId].onicecandidate = handleIce;
+        PeerConn.current[memberId].addEventListener("addstream", handleAddStream);
+
         console.log("RTCPeerConnection Created")
 
         if (myStream)
             myStream.getTracks().forEach((track) => PeerConn.current[memberId].addTrack(track, myStream))
+        else console.warn("MyStream is not usable")
 
         console.log("Recv Entered")
         const offer = await PeerConn.current[memberId].createOffer();
@@ -171,7 +186,7 @@ export default function Contents(props) {
             roomId: roomId,
             target: memberId,
         })
-    }, [roomId, SendData, handleIce, myStream])
+    }, [roomId, SendData, handleIce, myStream, handleAddStream])
 
     /** Offer를 수신받은 경우 Answer를 생성해 응답 */
     const offerRecv = useCallback(async (data) => {
@@ -181,9 +196,13 @@ export default function Contents(props) {
 
         PeerConn.current[targetId] = new RTCPeerConnection();
         PeerConn.current[targetId].onicecandidate = handleIce;
+        PeerConn.current[targetId].addEventListener("addstream", handleAddStream);
         console.log("RTCPeerConnection Created")
+
         if (myStream)
             myStream.getTracks().forEach((track) => PeerConn.current[targetId].addTrack(track, myStream))
+        else
+            console.warn("MyStream is not usable")
 
 
         console.log("Recv Target Offer")
@@ -200,7 +219,7 @@ export default function Contents(props) {
             target: targetId,
         })
 
-    }, [SendData, roomId, handleIce, myStream])
+    }, [SendData, roomId, handleIce, myStream, handleAddStream])
 
     /** Answer를 수신받은 경우 처리 */
     const answerRecv = useCallback(async (data) => {
@@ -209,6 +228,17 @@ export default function Contents(props) {
 
         console.log("Recv Answer");
         PeerConn.current[targetId].setRemoteDescription(answer);
+    }, [])
+
+    /** Ice를 수신받은 경우 처리 */
+    const iceRecv = useCallback(async (data) => {
+        const ice = data.ice;
+        const senderId = data.userId;
+
+        console.log("Recv Ice Candidate");
+        // if(PeerConn.current[senderId].iceConnectionState !== connected)
+        await PeerConn.current[senderId].addIceCandidate(ice);
+
     }, [])
 
     /** WebSocket에서 데이터를 수신받은 경우 데이터의 타입에 따라서 처리하는 메서드 호출 */
@@ -225,11 +255,13 @@ export default function Contents(props) {
             offerRecv(data)
         } else if (type === "Answer") {
             answerRecv(data);
+        } else if (type === "Ice") {
+            iceRecv(data);
         } else {
             console.log("Unkown Data Recv")
             console.log(data);
         }
-    }, [chatRecv, enteredRecv, offerRecv, answerRecv])
+    }, [chatRecv, enteredRecv, offerRecv, answerRecv, iceRecv])
 
     /** 컴포넌트가 처음 로드됐을 때 WebSocket 생성 */
     useEffect(() => {
@@ -296,7 +328,7 @@ export default function Contents(props) {
             setChatEnable(true);
             setMemberIds(memberIdList);
             setMembers(res.data.members);
-
+            
             let chatList = [];
             res.data.chatList.forEach(chatInfo => {
                 chatList.push(

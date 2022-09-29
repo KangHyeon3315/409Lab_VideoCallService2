@@ -86,6 +86,46 @@ public class ChatHandler extends TextWebSocketHandler {
         broadCastMsg(roomId, msg, userId);
     }
 
+    private void processIce(WebSocketSession session, JSONObject payload) throws Exception {
+        if(!payload.has("ice")) return;
+    
+        String token = payload.getString("token");
+        if (!jwtTokenProvider.validateToken(token)) {
+            deleteUserSession(session);
+            System.out.println("Token is not validate");
+            return;
+        }
+        String userId = jwtTokenProvider.getUserId(token);
+        UserInfo userInfo = userMap.get(userId);
+
+        String oldRoomId = userInfo.getRoomId();
+        if (oldRoomId != null) {
+            roomMemberMap.get(oldRoomId).remove(userId);
+        }
+
+        String roomId = payload.getString("roomId");
+        List<String> memberList = roomMemberMap.getOrDefault(roomId, null);
+        if (memberList == null) {
+            memberList = new ArrayList<>();
+        }
+
+        if (!memberList.contains(userId))
+            memberList.add(userId);
+
+        userInfo.setRoomId(roomId);
+        roomMemberMap.put(roomId, memberList);
+
+        /// resultMsg.put("ice", payload.getJSONObject("ice"));
+
+        JSONObject resultMsg = new JSONObject();
+        resultMsg.put("type", "Ice");
+        resultMsg.put("userId", userId);
+        resultMsg.put("ice", payload.getJSONObject("ice"));
+        TextMessage msg = new TextMessage(resultMsg.toString().getBytes());
+
+        broadCastMsg(roomId, msg, userId);
+    }
+
     private void processOfferAnswer(WebSocketSession session, JSONObject payload) throws Exception {
         String token = payload.getString("token");
         if (!jwtTokenProvider.validateToken(token)) {
@@ -119,8 +159,10 @@ public class ChatHandler extends TextWebSocketHandler {
         resultMsg.put("targetId", userInfo.getUserId());
         if(type.equals("Offer")) {
             resultMsg.put("offer", payload.getJSONObject("offer"));
-        } else {
+        } else if(type.equals("Answer")){
             resultMsg.put("answer", payload.getJSONObject("answer"));
+        } else {
+            throw new Exception("Unknown Type");
         }
         TextMessage msg = new TextMessage(resultMsg.toString().getBytes());
 
@@ -198,6 +240,9 @@ public class ChatHandler extends TextWebSocketHandler {
                 case "Offer":
                 case "Answer":
                     processOfferAnswer(session, payload);
+                    break;
+                case "Ice":
+                    processIce(session, payload);
                     break;
                 default:
                     System.out.println("Unknown Type : " + payload.get("type"));
