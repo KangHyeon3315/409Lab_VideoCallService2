@@ -75,20 +75,35 @@ public class ChatHandler extends TextWebSocketHandler {
             memberList.add(userId);
 
         userInfo.setRoomId(roomId);
+        userInfo.setStreamId(payload.getString("streamId"));
         roomMemberMap.put(roomId, memberList);
 
         JSONObject resultMsg = new JSONObject();
         resultMsg.put("type", "Entered");
         resultMsg.put("userId", userId);
+        resultMsg.put("streamId", userInfo.getStreamId());
         resultMsg.put("msg", "Someone Entered");
         TextMessage msg = new TextMessage(resultMsg.toString().getBytes());
 
         broadCastMsg(roomId, msg, userId);
+
+        JSONObject streamMap = new JSONObject();
+        for(String id : roomMemberMap.get(roomId)) {
+            UserInfo info = userMap.get(id);
+            String streamId = info.getStreamId();
+            streamMap.put(id, streamId);
+        }
+
+        JSONObject responseMsg = new JSONObject();
+        responseMsg.put("type", "EnterRes");
+        responseMsg.put("streamInfo", streamMap);
+        TextMessage response = new TextMessage(responseMsg.toString().getBytes());
+        session.sendMessage(response);
     }
 
     private void processIce(WebSocketSession session, JSONObject payload) throws Exception {
-        if(!payload.has("ice")) return;
-    
+        if(!payload.has("ice") || payload.isNull("ice")) return;
+
         String token = payload.getString("token");
         if (!jwtTokenProvider.validateToken(token)) {
             deleteUserSession(session);
@@ -115,8 +130,6 @@ public class ChatHandler extends TextWebSocketHandler {
         userInfo.setRoomId(roomId);
         roomMemberMap.put(roomId, memberList);
 
-        /// resultMsg.put("ice", payload.getJSONObject("ice"));
-
         JSONObject resultMsg = new JSONObject();
         resultMsg.put("type", "Ice");
         resultMsg.put("userId", userId);
@@ -124,6 +137,30 @@ public class ChatHandler extends TextWebSocketHandler {
         TextMessage msg = new TextMessage(resultMsg.toString().getBytes());
 
         broadCastMsg(roomId, msg, userId);
+    }
+
+    private void StreamUpdate(WebSocketSession session, JSONObject payload) throws Exception {
+        String token = payload.getString("token");
+        if (!jwtTokenProvider.validateToken(token)) {
+            deleteUserSession(session);
+            System.out.println("Token is not validate");
+            return;
+        }
+
+        System.out.println("User's Stream Update");
+
+        String userId = jwtTokenProvider.getUserId(token);
+        String streamId = payload.getString("streamId");
+        UserInfo userInfo = userMap.get(userId);
+        userInfo.setStreamId(streamId);
+
+        JSONObject resultMsg = new JSONObject();
+        resultMsg.put("type", "StreamUpdate");
+        resultMsg.put("userId", userId);
+        resultMsg.put("streamId", streamId);
+
+        TextMessage msg = new TextMessage(resultMsg.toString().getBytes());
+        broadCastMsg(userInfo.getRoomId(), msg, userId);
     }
 
     private void processOfferAnswer(WebSocketSession session, JSONObject payload) throws Exception {
@@ -244,6 +281,9 @@ public class ChatHandler extends TextWebSocketHandler {
                 case "Ice":
                     processIce(session, payload);
                     break;
+                case "UpdateStream":
+                    StreamUpdate(session, payload);
+                    break;
                 default:
                     System.out.println("Unknown Type : " + payload.get("type"));
                     break;
@@ -265,7 +305,11 @@ public class ChatHandler extends TextWebSocketHandler {
             UserInfo memberInfo = userMap.getOrDefault(memberId, null);
             if (memberInfo == null) continue;
 
-            memberInfo.getSession().sendMessage(msg);
+            WebSocketSession targetSession = memberInfo.getSession();
+            synchronized (targetSession) {
+                targetSession.sendMessage(msg);
+            }
+
         }
     }
 

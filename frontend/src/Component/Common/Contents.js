@@ -38,6 +38,7 @@ export default function Contents(props) {
 
     const [members, setMembers] = useState([]);
     const [memberIds, setMemberIds] = useState([]);
+    const [memberStreamInfo, setMemberStreamInfo] = useState({});
     const [selectedInviteMemberId, setSelectedInviteMemberId] = useState([]);
 
     const PeerConn = useRef({});
@@ -123,10 +124,17 @@ export default function Contents(props) {
 
             console.log("MediaStream Created")
             setMyStream(newMyStream);
+
+            console.log("Update My Stream Info to Server")
+            SendData({
+                type: "UpdateStream",
+                token: sessionStorage.getItem("token"),
+                streamId: newMyStream.id,
+            })
         } catch (ex) {
             console.log(ex);
         }
-    }, [myStream, useCam, useMic, CamId, MicId])
+    }, [myStream, useCam, useMic, CamId, MicId, SendData])
 
     useEffect(() => {
         // mode가 VideoCall이면서 myStream이 null인 경우 새로운 mediaStream 생성
@@ -163,7 +171,16 @@ export default function Contents(props) {
     }, [])
 
     /** 새로운 유저가 접속했다고 수신받은 경우 Offer를 생성해 전송 */
-    const enteredRecv = useCallback(async (memberId) => {
+    const enteredRecv = useCallback(async (data) => {
+        const memberId = data.userId;
+        if (memberId === sessionStorage.getItem("userId")) return;
+
+        const streamId = data.streamId;
+        let newStreamInfo = { ...memberStreamInfo }
+        newStreamInfo[memberId] = streamId;
+        setMemberStreamInfo(newStreamInfo);
+        console.log("Recv Users Stream Id When Entered Recv")
+
         PeerConn.current[memberId] = new RTCPeerConnection();
         PeerConn.current[memberId].onicecandidate = handleIce;
         PeerConn.current[memberId].addEventListener("addstream", handleAddStream);
@@ -186,7 +203,7 @@ export default function Contents(props) {
             roomId: roomId,
             target: memberId,
         })
-    }, [roomId, SendData, handleIce, myStream, handleAddStream])
+    }, [roomId, SendData, handleIce, myStream, handleAddStream, memberStreamInfo])
 
     /** Offer를 수신받은 경우 Answer를 생성해 응답 */
     const offerRecv = useCallback(async (data) => {
@@ -241,6 +258,20 @@ export default function Contents(props) {
 
     }, [])
 
+    const enterResRecv = useCallback(async (data) => {
+        console.log("Recv Existing Users Stream Info")
+        setMemberStreamInfo(data.streamInfo);
+    }, [setMemberStreamInfo])
+
+    const streamUpdateRecv = useCallback(async (data) => {
+        console.log("Recv Users Stream Info Updated (userId : " + data.userId + ", stream id : " + data.streamId + " )")
+
+        let newStreamInfo = { ...memberStreamInfo }
+        newStreamInfo[data.userId] = data.streamId;
+
+        setMemberStreamInfo(newStreamInfo);
+    }, [memberStreamInfo, setMemberStreamInfo])
+
     /** WebSocket에서 데이터를 수신받은 경우 데이터의 타입에 따라서 처리하는 메서드 호출 */
     const RecvData = useCallback((data) => {
         const type = data.type;
@@ -248,20 +279,22 @@ export default function Contents(props) {
         if (type === "Chat") {
             chatRecv(data);
         } else if (type === "Entered") {
-            const userId = data.userId;
-            if (userId === sessionStorage.getItem("userId")) return;
-            enteredRecv(userId);
+            enteredRecv(data);
         } else if (type === "Offer") {
             offerRecv(data)
         } else if (type === "Answer") {
             answerRecv(data);
         } else if (type === "Ice") {
             iceRecv(data);
+        } else if (type === "StreamUpdate") {
+            streamUpdateRecv(data);
+        } else if (type === "EnterRes") {
+            enterResRecv(data);
         } else {
             console.log("Unkown Data Recv")
             console.log(data);
         }
-    }, [chatRecv, enteredRecv, offerRecv, answerRecv, iceRecv])
+    }, [chatRecv, enteredRecv, offerRecv, answerRecv, iceRecv, streamUpdateRecv, enterResRecv])
 
     /** 컴포넌트가 처음 로드됐을 때 WebSocket 생성 */
     useEffect(() => {
@@ -270,6 +303,7 @@ export default function Contents(props) {
 
             ws.current.onopen = () => {
                 setConnected(true);
+
                 ws.current.send(JSON.stringify({
                     type: "Join",
                     token: sessionStorage.getItem("token"),
@@ -282,16 +316,23 @@ export default function Contents(props) {
         ws.current.onmessage = (evt) => { RecvData(JSON.parse(evt.data)) } // RecvData가 업데이트 될 때 onmessage 이벤트를 다시 등록
     }, [RecvData])
 
-
-    useEffect(() => {
-        // 새로운 room에 접속한 경우 자신이 접속했다는 정보를 서버에 전송
+    const sendEnterInfo = useCallback(() => {
         const result = SendData({
             type: "Enter",
             token: sessionStorage.getItem("token"),
             roomId: roomId,
+            streamId: myStream ? myStream.id : null,
         })
         if (result) console.log("Send Room Entered")
-    }, [roomId, SendData])
+    }, [roomId, SendData, myStream])
+
+
+    useEffect(() => {
+        // 새로운 room에 접속한 경우 자신이 접속했다는 정보를 서버에 전송
+        sendEnterInfo();
+    }, [roomId, sendEnterInfo])
+
+
 
     /** 서버에서 접속 전의 채팅 정보와 맴버 정보를 요청 후 업데이트 */
     const getChatInfo = useCallback(async () => {
@@ -328,7 +369,7 @@ export default function Contents(props) {
             setChatEnable(true);
             setMemberIds(memberIdList);
             setMembers(res.data.members);
-            
+
             let chatList = [];
             res.data.chatList.forEach(chatInfo => {
                 chatList.push(

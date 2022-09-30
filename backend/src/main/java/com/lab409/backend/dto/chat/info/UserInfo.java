@@ -12,6 +12,7 @@ public class UserInfo {
     private String userName;
 
     private String roomId; // 현재 접속중인 채팅방 정보
+    private String streamId;
 
     private WebSocketSession session;
 
@@ -26,5 +27,9 @@ public class UserInfo {
 
     public Member toDTO() {
         return new Member(userId, userName);
+    }
+
+    public void setStreamId(String id) {
+        this.streamId = id;
     }
 }
