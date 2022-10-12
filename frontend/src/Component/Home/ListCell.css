@@ -5,8 +5,7 @@
 
     margin: 5px;
 
-    height: calc(7vh + 2px);
-    max-height: calc(100px + 2px);
+    height: 80px;
     border: solid 1px lightgray;
     border-radius: 15px;
 }
@@ -23,16 +22,16 @@
 }
 
 .listCellImg {
-    width: 6vh;
-    height: 6vh;
-    margin: 0.5vh;
+    width: 60px;
+    height: 60px;
+    margin: 5px;
 
     max-height: calc(75px + 2px);
     max-width: calc(75px + 2px);
 
     border: solid 1px lightgray;
     
-    border-radius: 5vh;
+    border-radius: 50px;
 
     display: flex;
     flex-direction: column;
@@ -51,7 +50,7 @@
 
 .listCellTitle {
     padding-left: 10px;
-    padding-bottom: 0.5vh;
+    padding-bottom: 5px;
     border-bottom: solid 1px lightgray;
 }
 

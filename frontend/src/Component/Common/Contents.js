@@ -40,6 +40,7 @@ export default function Contents(props) {
     const [memberIds, setMemberIds] = useState([]);
     const [memberStreamInfo, setMemberStreamInfo] = useState({});
     const [selectedInviteMemberId, setSelectedInviteMemberId] = useState([]);
+    const [peerStream, setPeerStream] = useState({});
 
     const PeerConn = useRef({});
     // const [trackSenders, setTrackSenders] = useState([]);
@@ -123,7 +124,7 @@ export default function Contents(props) {
             newMyStream.getVideoTracks().forEach((track) => (track.enabled = useCam))
 
             console.log("MediaStream Created")
-            setMyStream(newMyStream);
+            setMyStream(newMyStream);          
 
             console.log("Update My Stream Info to Server")
             SendData({
@@ -167,8 +168,13 @@ export default function Contents(props) {
     const handleAddStream = useCallback((data) => {
         const stream = data.stream;
 
+        let newStream = { ...peerStream, }
+        newStream[stream.id] = stream;
+        setPeerStream(newStream);
+
+        // const memberId = memberStreamInfo[stream.id];
         console.log("got peers stream. peers stream id : " + stream.id)
-    }, [])
+    }, [peerStream])
 
     /** 새로운 유저가 접속했다고 수신받은 경우 Offer를 생성해 전송 */
     const enteredRecv = useCallback(async (data) => {
@@ -268,8 +274,8 @@ export default function Contents(props) {
 
         let newStreamInfo = { ...memberStreamInfo }
         newStreamInfo[data.userId] = data.streamId;
-
         setMemberStreamInfo(newStreamInfo);
+
     }, [memberStreamInfo, setMemberStreamInfo])
 
     /** WebSocket에서 데이터를 수신받은 경우 데이터의 타입에 따라서 처리하는 메서드 호출 */
@@ -470,7 +476,14 @@ export default function Contents(props) {
             mainContents = (
                 <div className='MainContents'>
                     <VideoCall
+                        useCam={useCam}
+                        useMic={useMic}
+                        
+                        members={members}
+                        streamInfo={memberStreamInfo}
+                        
                         myStream={myStream}
+                        peerStream={peerStream}
                     />
                 </div>
             )

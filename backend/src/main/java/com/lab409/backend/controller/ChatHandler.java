@@ -299,6 +299,8 @@ public class ChatHandler extends TextWebSocketHandler {
     }
 
     private void broadCastMsg(String roomId, TextMessage msg, String ExcludeId) throws IOException {
+        if(roomMemberMap.get(roomId) == null) return;
+
         for (String memberId : roomMemberMap.get(roomId)) {
             if(memberId.equals(ExcludeId)) continue;
 

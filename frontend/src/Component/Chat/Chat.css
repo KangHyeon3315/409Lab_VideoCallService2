@@ -38,15 +38,15 @@
 
 .ChatInput {
     flex: 1;
-    margin-left: 2vw;
-    margin-right: 1vw;
-    padding-left: 1vw;
-    padding-right: 1vw;
+    margin-left: 20px;
+    margin-right: 10px;
+    padding-left: 10px;
+    padding-right: 10px;
 
-    height: 3vh;
+    height: 27px;
 
     border: none;
-    border-radius: 3vh;
+    border-radius: 30px;
 
     background-color: #44444411;
 
@@ -91,7 +91,7 @@
     width: 80%;
     height: 80%;
 
-    border-radius: 7vh;
+    border-radius: 100%;
 }
 
 .ChatInfo {

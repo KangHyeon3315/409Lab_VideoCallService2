@@ -207,7 +207,7 @@ function ListViewer(props) {
                             <div id="FriendAddWrap">
                                 <h3> 친구 추가하기 </h3>
                                 <div className='inputWrap'>
-                                    <label> 친구 ID </label>
+                                    <label> ID </label>
                                     <input value={inputedFriendId} onChange={(e) => setFriendId(e.target.value)} />
                                 </div>
                                 <button id="FriendsAddBtn" onClick={friendAdd} > 추가하기 </button>

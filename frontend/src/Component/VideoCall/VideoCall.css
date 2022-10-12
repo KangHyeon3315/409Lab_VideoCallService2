@@ -26,16 +26,12 @@
     width: calc(100% - 2px);
     height: calc(100% - 2px);
 
-    border: solid 1px lightgray;
+    margin: 1px;
+
     display: flex;
     flex-direction: row;
     align-items: center;
     justify-content: center;
 
     overflow: hidden;
-}
-
-.Video {
-    width: 100%;
-    object-fit: contain;
 }

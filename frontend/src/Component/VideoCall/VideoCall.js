@@ -1,29 +1,46 @@
-import React, { useEffect, useRef } from "react"
+import React, { useEffect, useState } from "react"
 import './VideoCall.css'
+import VideoCell from "./VideoCell";
 
 export default function VideoCall(props) {
-    const videoRef = useRef([]);
+    const [videos, setVideos] = useState([]);
 
     useEffect(() => {
-        if(props.myStream) videoRef.current[0].srcObject = props.myStream;
-        else videoRef.current[0].srcObject = null;
-    }, [props.myStream])
+        let newVideos = [];
+        props.members.forEach(info => {
+            let stream;
+            if(info.userId.toLowerCase() === sessionStorage.getItem("userId").toLowerCase()) {
+                if(props.useCam || props.useMic) {
+                    stream = props.myStream;
+                }
+            } else {
+                const streamId = props.streamInfo[info.userId]
+                if(streamId) {
+                    stream = props.peerStream[streamId];
+                }
+            }
 
-    let videoList = [];
-    for (let i = 0; i < 9; i++) {
-        videoList.push(<video className="Video" autoPlay playsInline ref={(el) => videoRef.current.push(el)} />)
-    }
+            newVideos.push(
+                <VideoCell
+                    memberId={info.userId}
+                    name={info.name}
+                    Stream={stream}
+                />
+            )
+        })
+
+        setVideos(newVideos)
+    }, [props.useCam, props.useMic, props.members, props.streamInfo, props.myStream, props.peerStream])
 
     let Contents;
-    // switch (MemberList.length) {
-    let count = 9;
-    switch (count) {
+    // switch (videos.length) {
+    switch(10) {
         case 0:
         case 1:
             Contents = (
                 <div className="VideoRow">
                     <div className="VideoSection">
-                        {videoList[0]}
+                        {videos[0]}
                     </div>
                 </div>
             )
@@ -32,21 +49,21 @@ export default function VideoCall(props) {
         case 3:
         case 4:
             Contents = (
-                <div className="VideoRow">
-                    <div className="VideoColumn">
+                <div className="VideoColumn">
+                    <div className="VideoRow">
                         <div className="VideoSection">
-                            {videoList[0]}
+                            {videos[0]}
                         </div>
                         <div className="VideoSection">
-                            {videoList[1]}
+                            {videos[1]}
                         </div>
                     </div>
-                    <div className="VideoColumn">
+                    <div className="VideoRow">
                         <div className="VideoSection">
-                            {videoList[2]}
+                            {videos[2]}
                         </div>
                         <div className="VideoSection">
-                            {videoList[3]}
+                            {videos[3]}
                         </div>
                     </div>
 
@@ -57,27 +74,27 @@ export default function VideoCall(props) {
         case 5:
         case 6:
             Contents = (
-                <div className="VideoRow">
-                    <div className="VideoColumn">
+                <div className="VideoColumn">
+                    <div className="VideoRow">
                         <div className="VideoSection">
-                            {videoList[0]}
+                            {videos[0]}
                         </div>
                         <div className="VideoSection">
-                            {videoList[1]}
+                            {videos[1]}
                         </div>
                         <div className="VideoSection">
-                            {videoList[2]}
+                            {videos[2]}
                         </div>
                     </div>
-                    <div className="VideoColumn">
+                    <div className="VideoRow">
                         <div className="VideoSection">
-                            {videoList[3]}
+                            {videos[3]}
                         </div>
                         <div className="VideoSection">
-                            {videoList[4]}
+                            {videos[4]}
                         </div>
                         <div className="VideoSection">
-                            {videoList[5]}
+                            {videos[5]}
                         </div>
                     </div>
                 </div>
@@ -85,38 +102,38 @@ export default function VideoCall(props) {
             break;
         default:
             Contents = (
-                <div className="VideoRow">
-                    <div className="VideoColumn">
+                <div className="VideoColumn">
+                    <div className="VideoRow">
                         <div className="VideoSection">
-                            {videoList[0]}
+                            {videos[0]}
                         </div>
                         <div className="VideoSection">
-                            {videoList[1]}
+                            {videos[1]}
                         </div>
                         <div className="VideoSection">
-                            {videoList[2]}
-                        </div>
-                    </div>
-                    <div className="VideoColumn">
-                        <div className="VideoSection">
-                            {videoList[3]}
-                        </div>
-                        <div className="VideoSection">
-                            {videoList[4]}
-                        </div>
-                        <div className="VideoSection">
-                            {videoList[5]}
+                            {videos[2]}
                         </div>
                     </div>
-                    <div className="VideoColumn">
+                    <div className="VideoRow">
                         <div className="VideoSection">
-                            {videoList[6]}
+                            {videos[3]}
                         </div>
                         <div className="VideoSection">
-                            {videoList[7]}
+                            {videos[4]}
                         </div>
                         <div className="VideoSection">
-                            {videoList[8]}
+                            {videos[5]}
+                        </div>
+                    </div>
+                    <div className="VideoRow">
+                        <div className="VideoSection">
+                            {videos[6]}
+                        </div>
+                        <div className="VideoSection">
+                            {videos[7]}
+                        </div>
+                        <div className="VideoSection">
+                            {videos[8]}
                         </div>
                     </div>
                 </div>
@@ -127,7 +144,7 @@ export default function VideoCall(props) {
 
     return (
         <div className="VideoCall">
-            {Contents}
+           {Contents} 
         </div>
     )
 }
