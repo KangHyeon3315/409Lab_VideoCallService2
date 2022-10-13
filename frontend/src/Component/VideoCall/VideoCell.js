@@ -18,9 +18,11 @@ export default function VideoCell(props) {
                 className="Video"
                 ref={vidoeRef}
             />
-            <label className="NameLabel">
-                {props.name}
-            </label>
+            <div className="NameLabelWrap">
+                <label className="NameLabel">
+                    {props.name}
+                </label>
+            </div>
         </div>
     )
 }
