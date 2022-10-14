@@ -18,31 +18,33 @@ export default function Contents(props) {
     const navigate = useNavigate();
     const { roomId } = useParams();
 
-    const [useMic, setUseMic] = useState(false);
-    const [MicId, setMicId] = useState("default");
-    const [useCam, setUsecam] = useState(false);
-    const [CamId, setCamId] = useState("default");
-    const [myStream, setMyStream] = useState(null);
+    const [useMic, setUseMic] = useState(false);        // Mic 사용 여부
+    const [MicId, setMicId] = useState("default");      // 사용하는 Mic의 Id
+    const [useCam, setUsecam] = useState(false);        // Cam 사용 여부
+    const [CamId, setCamId] = useState("default");      // 사용하는 Cam의 Id
+    const [myStream, setMyStream] = useState(null);     // 내 Camera &  Mic Stream
 
-    const [chatEnable, setChatEnable] = useState(false);
-    const [memberEnable, setMemberEnable] = useState(false);
+    const [chatEnable, setChatEnable] = useState(false);    // Chat 화면 사용 여부
+    const [memberEnable, setMemberEnable] = useState(false);    // Member 목록 화면 사용 여부
 
-    const [mode, setMode] = useState("VideoCall");
-    const [roomTitle, setRoomTitle] = useState("Title")
+    const [mode, setMode] = useState("VideoCall");          // 현재 화면의 Mode
+    const [roomTitle, setRoomTitle] = useState("Title")     // 현재 채팅방의 Title
 
-    const [autoScroll, setAutoScroll] = useState(true);
-    const [chatCmpList, setChatCmpList] = useState([]);
+    const [autoScroll, setAutoScroll] = useState(true);     // 채팅을 Auto Scroll 할지 여부
+    const [chatCmpList, setChatCmpList] = useState([]);     // 채팅방의 각 채팅에 대한 Cmp List
 
-    const ws = useRef(null);
-    const [isConnected, setConnected] = useState(false);
+    const PeerConn = useRef({});                            // RTC 통신을 위한 Peer Connection
+    const ws = useRef(null);                                // WebSocket
+    const [isConnected, setConnected] = useState(false);    // WebSocket 접속 여부
 
-    const [members, setMembers] = useState([]);
-    const [memberIds, setMemberIds] = useState([]);
-    const [memberStreamInfo, setMemberStreamInfo] = useState({});
-    const [selectedInviteMemberId, setSelectedInviteMemberId] = useState([]);
-    const [peerStream, setPeerStream] = useState({});
+    const [members, setMembers] = useState([]);             // 현재 채팅방의 구성원 목록
+    const [memberIds, setMemberIds] = useState([]);         // 현재 채팅방의 구성원 ID 목록
+    const [memberStreamInfo, setMemberStreamInfo] = useState({});   // 각 유저의 Stream에 대한 정보
+    const [peerStream, setPeerStream] = useState({});       // 연결된 Peer Stream들
 
-    const PeerConn = useRef({});
+    const [selectedInviteMemberId, setSelectedInviteMemberId] = useState([]);   // 현재 채팅방에 초대한 유저 ID Arr
+
+
     // const [trackSenders, setTrackSenders] = useState([]);
 
     /** 현재 시간을 YYYY-MM-DD hh:mm:ss 형식으로 변환*/
@@ -124,7 +126,7 @@ export default function Contents(props) {
             newMyStream.getVideoTracks().forEach((track) => (track.enabled = useCam))
 
             console.log("MediaStream Created")
-            setMyStream(newMyStream);          
+            setMyStream(newMyStream);
 
             console.log("Update My Stream Info to Server")
             SendData({
@@ -140,12 +142,27 @@ export default function Contents(props) {
     useEffect(() => {
         // mode가 VideoCall이면서 myStream이 null인 경우 새로운 mediaStream 생성
         // videoCall이 아닌데 mediaStream이 null이 아닌경우 Stream 중지
-        if (mode === "VideoCall" && myStream === null) {
+        if (roomId === undefined || mode !== "VideoCall") {
+            if (myStream !== null) {
+                console.log("Clear My Stream")
+                myStream.getTracks().forEach((track) => { track.stop() })
+                setMyStream(null)
+            }
+
+            console.log("Clear Stream Info")
+            Object.keys(PeerConn.current).forEach(userId => {
+                PeerConn.current[userId].close();
+                PeerConn.current[userId] = undefined;
+            })
+            setMemberStreamInfo({})
+            setPeerStream({})
+
+            
+            
+        } else if (roomId && mode === "VideoCall" && myStream === null) {
             getMediaStream();
-        } else if (mode !== "VideoCall" && myStream !== null) {
-            myStream.getTracks().forEach((track) => { track.stop() })
         }
-    }, [mode, myStream, getMediaStream])
+    }, [roomId, mode, myStream, getMediaStream])
 
     useEffect(() => {
         // mic및 cam 사용을 토글 하는 경우 mediaStream을 수정
@@ -345,7 +362,10 @@ export default function Contents(props) {
         try {
             const token = sessionStorage.getItem('token');
             if (token === null || token === '') { navigate('/signin'); return; }
-            if (roomId === undefined) return;
+            if (roomId === undefined) {
+                setRoomTitle("Title");
+                return;
+            }
 
             const userId = sessionStorage.getItem('userId');
 
@@ -478,10 +498,10 @@ export default function Contents(props) {
                     <VideoCall
                         useCam={useCam}
                         useMic={useMic}
-                        
+
                         members={members}
                         streamInfo={memberStreamInfo}
-                        
+
                         myStream={myStream}
                         peerStream={peerStream}
                     />
