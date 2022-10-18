@@ -147,8 +147,6 @@ public class ChatHandler extends TextWebSocketHandler {
             return;
         }
 
-        System.out.println("User's Stream Update");
-
         String userId = jwtTokenProvider.getUserId(token);
         String streamId = payload.getString("streamId");
         UserInfo userInfo = userMap.get(userId);

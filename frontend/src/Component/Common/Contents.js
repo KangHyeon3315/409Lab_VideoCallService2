@@ -113,66 +113,16 @@ export default function Contents(props) {
         setChatCmpList(chatList)
     }, [chatCmpList])
 
-    /** Media Stream을 생성 */
-    const getMediaStream = useCallback(async (camId, micId) => {
-        try {
-            if (myStream) myStream.getTracks().forEach((track) => { track.stop() })
-
-            let newMyStream = await navigator.mediaDevices.getUserMedia({
-                audio: { deviceId: micId === undefined ? MicId : micId },
-                video: { deviceId: camId === undefined ? CamId : camId },
-            });
-            newMyStream.getAudioTracks().forEach((track) => (track.enabled = useMic))
-            newMyStream.getVideoTracks().forEach((track) => (track.enabled = useCam))
-
-            console.log("MediaStream Created")
-            setMyStream(newMyStream);
-
-            console.log("Update My Stream Info to Server")
-            SendData({
-                type: "UpdateStream",
-                token: sessionStorage.getItem("token"),
-                streamId: newMyStream.id,
-            })
-        } catch (ex) {
-            console.log(ex);
-        }
-    }, [myStream, useCam, useMic, CamId, MicId, SendData])
-
-    useEffect(() => {
-        // mode가 VideoCall이면서 myStream이 null인 경우 새로운 mediaStream 생성
-        // videoCall이 아닌데 mediaStream이 null이 아닌경우 Stream 중지
-        if (roomId === undefined || mode !== "VideoCall") {
-            if (myStream !== null) {
-                console.log("Clear My Stream")
-                myStream.getTracks().forEach((track) => { track.stop() })
-                setMyStream(null)
-            }
-
-            console.log("Clear Stream Info")
-            Object.keys(PeerConn.current).forEach(userId => {
-                PeerConn.current[userId].close();
-                PeerConn.current[userId] = undefined;
-            })
-            setMemberStreamInfo({})
-            setPeerStream({})
-
-            
-            
-        } else if (roomId && mode === "VideoCall" && myStream === null) {
-            getMediaStream();
-        }
-    }, [roomId, mode, myStream, getMediaStream])
-
     useEffect(() => {
         // mic및 cam 사용을 토글 하는 경우 mediaStream을 수정
+        console.log("*. Update Stream Device Enable")
         if (myStream === null) return;
         myStream.getAudioTracks().forEach((track) => (track.enabled = useMic))
         myStream.getVideoTracks().forEach((track) => (track.enabled = useCam))
     }, [myStream, useCam, useMic])
 
     const handleIce = useCallback((data) => {
-        console.log("got ice candidate");
+        console.log("- *. Got Ice Candidate");
         SendData({
             type: "Ice",
             token: sessionStorage.getItem("token"),
@@ -190,35 +140,35 @@ export default function Contents(props) {
         setPeerStream(newStream);
 
         // const memberId = memberStreamInfo[stream.id];
-        console.log("got peers stream. peers stream id : " + stream.id)
+        console.log("- * Got Peers Stream. Peers Stream ID : " + stream.id)
     }, [peerStream])
 
     /** 새로운 유저가 접속했다고 수신받은 경우 Offer를 생성해 전송 */
     const enteredRecv = useCallback(async (data) => {
+        if(mode !== 'VideoCall') return;
+
         const memberId = data.userId;
         if (memberId === sessionStorage.getItem("userId")) return;
 
-        const streamId = data.streamId;
-        let newStreamInfo = { ...memberStreamInfo }
-        newStreamInfo[memberId] = streamId;
-        setMemberStreamInfo(newStreamInfo);
-        console.log("Recv Users Stream Id When Entered Recv")
+        console.log("- 1. Recv Entered Msg -> RTCPeerConnection Create")
 
         PeerConn.current[memberId] = new RTCPeerConnection();
         PeerConn.current[memberId].onicecandidate = handleIce;
         PeerConn.current[memberId].addEventListener("addstream", handleAddStream);
 
-        console.log("RTCPeerConnection Created")
+        const streamId = data.streamId;
+        let newStreamInfo = { ...memberStreamInfo }
+        newStreamInfo[memberId] = streamId;
+        setMemberStreamInfo(newStreamInfo);
 
         if (myStream)
             myStream.getTracks().forEach((track) => PeerConn.current[memberId].addTrack(track, myStream))
-        else console.warn("MyStream is not usable")
+        else console.warn("MyStream is not defined")
 
-        console.log("Recv Entered")
         const offer = await PeerConn.current[memberId].createOffer();
 
         PeerConn.current[memberId].setLocalDescription(offer);
-        console.log("Send My Offer");
+        console.log("- 2. Send My Offer");
         SendData({
             type: "Offer",
             token: sessionStorage.getItem("token"),
@@ -226,31 +176,28 @@ export default function Contents(props) {
             roomId: roomId,
             target: memberId,
         })
-    }, [roomId, SendData, handleIce, myStream, handleAddStream, memberStreamInfo])
+        
+    }, [roomId, SendData, handleIce, myStream, handleAddStream, memberStreamInfo, mode])
 
     /** Offer를 수신받은 경우 Answer를 생성해 응답 */
     const offerRecv = useCallback(async (data) => {
-
         const offer = data.offer;
         const targetId = data.userId;
 
+        console.log("- 1. Recv Offer -> RTCPeerConnection Create")
         PeerConn.current[targetId] = new RTCPeerConnection();
         PeerConn.current[targetId].onicecandidate = handleIce;
         PeerConn.current[targetId].addEventListener("addstream", handleAddStream);
-        console.log("RTCPeerConnection Created")
-
+        
         if (myStream)
             myStream.getTracks().forEach((track) => PeerConn.current[targetId].addTrack(track, myStream))
-        else
-            console.warn("MyStream is not usable")
+        else console.warn("MyStream is not defined")
 
-
-        console.log("Recv Target Offer")
         await PeerConn.current[targetId].setRemoteDescription(offer);
         let answer = await PeerConn.current[targetId].createAnswer();
         await PeerConn.current[targetId].setLocalDescription(answer);
 
-        console.log("Send My Answer")
+        console.log("- 2. Send My Answer")
         SendData({
             type: "Answer",
             token: sessionStorage.getItem("token"),
@@ -258,7 +205,6 @@ export default function Contents(props) {
             roomId: roomId,
             target: targetId,
         })
-
     }, [SendData, roomId, handleIce, myStream, handleAddStream])
 
     /** Answer를 수신받은 경우 처리 */
@@ -266,7 +212,7 @@ export default function Contents(props) {
         const answer = data.answer;
         const targetId = data.userId;
 
-        console.log("Recv Answer");
+        console.log("- 3. Recv Answer");
         PeerConn.current[targetId].setRemoteDescription(answer);
     }, [])
 
@@ -275,25 +221,80 @@ export default function Contents(props) {
         const ice = data.ice;
         const senderId = data.userId;
 
-        console.log("Recv Ice Candidate");
+        console.log("- *. Recv Ice Candidate");
         // if(PeerConn.current[senderId].iceConnectionState !== connected)
         await PeerConn.current[senderId].addIceCandidate(ice);
-
     }, [])
 
+    /** Media Stream을 생성 후 RTC 연결*/
+    const getMediaStream = useCallback(async (camId, micId) => {
+        console.log("1. Update My Stream")
+        try {
+            if (myStream) myStream.getTracks().forEach((track) => { track.stop() })
+
+            let newMyStream = await navigator.mediaDevices.getUserMedia({
+                audio: { deviceId: micId === undefined ? MicId : micId },
+                video: { deviceId: camId === undefined ? CamId : camId },
+            });
+            newMyStream.getAudioTracks().forEach((track) => (track.enabled = useMic))
+            newMyStream.getVideoTracks().forEach((track) => (track.enabled = useCam))
+
+            setMyStream(newMyStream);
+
+        } catch (ex) {
+            console.log(ex);
+        }
+
+    }, [myStream, useCam, useMic, CamId, MicId, SendData])
+
+    /** 내 접속 정보를 서버에 전송 */
+    const sendEnterInfo = useCallback((roomId, mode) => {
+        const result = SendData({
+            type: "Enter",
+            token: sessionStorage.getItem("token"),
+            roomId: roomId,
+            streamId: myStream ? myStream.id : null,
+        })
+        if (result) console.log("3. Send Room Entered")
+
+    }, [SendData, myStream])
+
+    const clearMediaStream = useCallback(() => {
+        console.log("*. Clear Stream Info")
+
+        if (myStream !== null) {
+            myStream.getTracks().forEach((track) => { track.stop() })
+            setMyStream(null)
+        }
+
+        Object.keys(PeerConn.current).forEach(userId => {
+            PeerConn.current[userId].close();
+            PeerConn.current[userId] = undefined;
+        })
+        setPeerStream({})
+    }, [myStream])
+
     const enterResRecv = useCallback(async (data) => {
-        console.log("Recv Existing Users Stream Info")
+        console.log("4. Recv Existing Users Stream Info")
         setMemberStreamInfo(data.streamInfo);
+        console.log(data.streamInfo)
     }, [setMemberStreamInfo])
 
-    const streamUpdateRecv = useCallback(async (data) => {
-        console.log("Recv Users Stream Info Updated (userId : " + data.userId + ", stream id : " + data.streamId + " )")
-
-        let newStreamInfo = { ...memberStreamInfo }
-        newStreamInfo[data.userId] = data.streamId;
-        setMemberStreamInfo(newStreamInfo);
-
-    }, [memberStreamInfo, setMemberStreamInfo])
+    useEffect(() => {
+        // 새로운 room에 접속한 경우 자신이 접속했다는 정보를 서버에 전송
+        if((mode === "VideoCall" && myStream) || mode !== "VideoCall") {
+            sendEnterInfo(roomId, mode);
+        }
+        
+    }, [roomId, mode, myStream, sendEnterInfo])
+   
+    useEffect(() => {
+        if (roomId && mode === "VideoCall") {
+            getMediaStream();
+        } else {
+            clearMediaStream();
+        }        
+    }, [roomId, mode])
 
     /** WebSocket에서 데이터를 수신받은 경우 데이터의 타입에 따라서 처리하는 메서드 호출 */
     const RecvData = useCallback((data) => {
@@ -309,15 +310,13 @@ export default function Contents(props) {
             answerRecv(data);
         } else if (type === "Ice") {
             iceRecv(data);
-        } else if (type === "StreamUpdate") {
-            streamUpdateRecv(data);
         } else if (type === "EnterRes") {
             enterResRecv(data);
         } else {
             console.log("Unkown Data Recv")
             console.log(data);
         }
-    }, [chatRecv, enteredRecv, offerRecv, answerRecv, iceRecv, streamUpdateRecv, enterResRecv])
+    }, [chatRecv, enteredRecv, offerRecv, answerRecv, iceRecv, enterResRecv])
 
     /** 컴포넌트가 처음 로드됐을 때 WebSocket 생성 */
     useEffect(() => {
@@ -338,23 +337,6 @@ export default function Contents(props) {
         }
         ws.current.onmessage = (evt) => { RecvData(JSON.parse(evt.data)) } // RecvData가 업데이트 될 때 onmessage 이벤트를 다시 등록
     }, [RecvData])
-
-    const sendEnterInfo = useCallback(() => {
-        const result = SendData({
-            type: "Enter",
-            token: sessionStorage.getItem("token"),
-            roomId: roomId,
-            streamId: myStream ? myStream.id : null,
-        })
-        if (result) console.log("Send Room Entered")
-    }, [roomId, SendData, myStream])
-
-
-    useEffect(() => {
-        // 새로운 room에 접속한 경우 자신이 접속했다는 정보를 서버에 전송
-        sendEnterInfo();
-    }, [roomId, sendEnterInfo])
-
 
 
     /** 서버에서 접속 전의 채팅 정보와 맴버 정보를 요청 후 업데이트 */
