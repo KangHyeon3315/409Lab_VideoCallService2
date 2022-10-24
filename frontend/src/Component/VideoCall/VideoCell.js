@@ -5,13 +5,13 @@ export default function VideoCell(props) {
     let vidoeRef = useRef(null)
 
     useEffect(() => {
-        console.log('Stream!!!!')
-        console.log(props.Stream)
         if (props.Stream && vidoeRef.current) {
-            vidoeRef.current.srcObject = props.Stream;
+            vidoeRef.current.srcObject = props.Stream;   
+        } else {
+            vidoeRef.current.srcObject = null;
         }
     }, [props.Stream])
-
+    
     return (
         <div className="VideoContainer">
             <video

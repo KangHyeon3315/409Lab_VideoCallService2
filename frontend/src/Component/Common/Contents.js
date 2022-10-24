@@ -44,9 +44,6 @@ export default function Contents(props) {
 
     const [selectedInviteMemberId, setSelectedInviteMemberId] = useState([]);   // 현재 채팅방에 초대한 유저 ID Arr
 
-
-    // const [trackSenders, setTrackSenders] = useState([]);
-
     /** 현재 시간을 YYYY-MM-DD hh:mm:ss 형식으로 변환*/
     const getTimeStr = () => {
         var today = new Date();
@@ -145,7 +142,7 @@ export default function Contents(props) {
 
     /** 새로운 유저가 접속했다고 수신받은 경우 Offer를 생성해 전송 */
     const enteredRecv = useCallback(async (data) => {
-        if(mode !== 'VideoCall') return;
+        if (mode !== 'VideoCall') return;
 
         const memberId = data.userId;
         if (memberId === sessionStorage.getItem("userId")) return;
@@ -176,7 +173,7 @@ export default function Contents(props) {
             roomId: roomId,
             target: memberId,
         })
-        
+
     }, [roomId, SendData, handleIce, myStream, handleAddStream, memberStreamInfo, mode])
 
     /** Offer를 수신받은 경우 Answer를 생성해 응답 */
@@ -188,7 +185,7 @@ export default function Contents(props) {
         PeerConn.current[targetId] = new RTCPeerConnection();
         PeerConn.current[targetId].onicecandidate = handleIce;
         PeerConn.current[targetId].addEventListener("addstream", handleAddStream);
-        
+
         if (myStream)
             myStream.getTracks().forEach((track) => PeerConn.current[targetId].addTrack(track, myStream))
         else console.warn("MyStream is not defined")
@@ -236,6 +233,7 @@ export default function Contents(props) {
                 audio: { deviceId: micId === undefined ? MicId : micId },
                 video: { deviceId: camId === undefined ? CamId : camId },
             });
+
             newMyStream.getAudioTracks().forEach((track) => (track.enabled = useMic))
             newMyStream.getVideoTracks().forEach((track) => (track.enabled = useCam))
 
@@ -245,7 +243,7 @@ export default function Contents(props) {
             console.log(ex);
         }
 
-    }, [myStream, useCam, useMic, CamId, MicId, SendData])
+    }, [myStream, useCam, useMic, CamId, MicId])
 
     /** 내 접속 정보를 서버에 전송 */
     const sendEnterInfo = useCallback((roomId, mode) => {
@@ -282,18 +280,18 @@ export default function Contents(props) {
 
     useEffect(() => {
         // 새로운 room에 접속한 경우 자신이 접속했다는 정보를 서버에 전송
-        if((mode === "VideoCall" && myStream) || mode !== "VideoCall") {
+        if ((mode === "VideoCall" && myStream) || mode !== "VideoCall") {
             sendEnterInfo(roomId, mode);
         }
-        
+
     }, [roomId, mode, myStream, sendEnterInfo])
-   
+
     useEffect(() => {
         if (roomId && mode === "VideoCall") {
             getMediaStream();
         } else {
             clearMediaStream();
-        }        
+        }
     }, [roomId, mode])
 
     /** WebSocket에서 데이터를 수신받은 경우 데이터의 타입에 따라서 처리하는 메서드 호출 */
@@ -312,11 +310,19 @@ export default function Contents(props) {
             iceRecv(data);
         } else if (type === "EnterRes") {
             enterResRecv(data);
+        } else if (type === "Exited") {
+            console.log("Exited Recv!!!!")
+            
+            let newMemberStreamInfo = {...memberStreamInfo};
+            delete newMemberStreamInfo[data.userId];
+            setMemberStreamInfo(newMemberStreamInfo);
+
+            PeerConn.current[data.userId] = undefined;
         } else {
             console.log("Unkown Data Recv")
             console.log(data);
         }
-    }, [chatRecv, enteredRecv, offerRecv, answerRecv, iceRecv, enterResRecv])
+    }, [chatRecv, enteredRecv, offerRecv, answerRecv, iceRecv, enterResRecv, memberStreamInfo])
 
     /** 컴포넌트가 처음 로드됐을 때 WebSocket 생성 */
     useEffect(() => {
@@ -485,6 +491,7 @@ export default function Contents(props) {
                         streamInfo={memberStreamInfo}
 
                         myStream={myStream}
+                        peerConn={PeerConn}
                         peerStream={peerStream}
                     />
                 </div>
@@ -523,7 +530,11 @@ export default function Contents(props) {
     return (
         <div id="ContentsWrap">
             <div className='ContentsHeader'>
-                <button className='IconBtn' onClick={() => navigate("/")}>
+                <button className='IconBtn' onClick={() => {
+                    console.log("Send Exit")
+                    SendData({ type: "Exit" })
+                    navigate("/")
+                }}>
                     <MdOutlineKeyboardArrowLeft className='Icon' />
                 </button>
                 <b className='RoomTitle'>{roomTitle}</b>

@@ -8,7 +8,8 @@ export default function VideoCall(props) {
     useEffect(() => {
         let newVideos = [];
         props.members.forEach(info => {
-            let stream;
+            console.log(info)
+            let stream = null;
             if (info.userId.toLowerCase() === sessionStorage.getItem("userId").toLowerCase()) {
                 if (props.useCam || props.useMic) {
                     stream = props.myStream;
@@ -26,11 +27,13 @@ export default function VideoCall(props) {
                     memberId={info.userId}
                     name={info.name}
                     Stream={stream}
+                    updateTime={new Date()}
                 />
             )
         })
 
         setVideos(newVideos)
+
     }, [props.useCam, props.useMic, props.members, props.streamInfo, props.myStream, props.peerStream])
 
     let column;
