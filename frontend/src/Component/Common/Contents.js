@@ -446,7 +446,7 @@ export default function Contents(props) {
 
     const getContentsCmp = () => {
         let MemberCmp = <Member MemberList={members} />
-        let ChatCmp = <Chat ChatCmpList={chatCmpList} SendMsg={SendMsg} scrollBottom={autoScroll} />
+        let ChatCmp = <Chat ChatCmpList={chatCmpList} SendMsg={SendMsg} scrollBottom={autoScroll} roomId={roomId} />
 
         let SideContents = null;
         if (mode !== null && (chatEnable || memberEnable)) {

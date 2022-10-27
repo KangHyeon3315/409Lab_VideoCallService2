@@ -53,8 +53,6 @@ public class ChatHandler extends TextWebSocketHandler {
     private void exitRoom(UserInfo userInfo) throws Exception {
         String roomId = userInfo.getRoomId();
 
-        System.out.println("Exit User + " + roomId);
-
         if (roomId != null) {
             JSONObject resultMsg = new JSONObject();
             resultMsg.put("type", "Exited");
