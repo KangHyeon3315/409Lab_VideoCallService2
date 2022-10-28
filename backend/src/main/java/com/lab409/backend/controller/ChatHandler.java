@@ -257,11 +257,12 @@ public class ChatHandler extends TextWebSocketHandler {
                 .sender(sender.get())
                 .sendTime(sendTime)
                 .chat(payload.getString("msg"))
+                .type("chat")
                 .build();
         long chatId = chatRepository.save(chat).getId();
 
         JSONObject resultMsg = new JSONObject();
-        resultMsg.put("type", "Chat");
+        resultMsg.put("type", "chat");
         resultMsg.put("id", chatId);
         resultMsg.put("roomId", roomId);
         resultMsg.put("senderId", senderId);
@@ -271,6 +272,62 @@ public class ChatHandler extends TextWebSocketHandler {
         resultMsg.put("msg", payload.getString("msg"));
         TextMessage msg = new TextMessage(resultMsg.toString().getBytes());
         broadCastMsg(roomId, msg);
+    }
+
+    /**
+     * 채팅 전송에 대한 처리
+     */
+    public void processFileUpload(String roomId, String userId, List<String> originFileNames, List<String> fileNames) throws Exception {
+        Optional<ChatRoom> chatRoom = chatRoomRepository.findById(roomId);
+        if (!chatRoom.isPresent()) {
+            System.out.println("processFileUpload can not find room");
+            return;
+        }
+
+        Optional<User> sender = userRepository.findByUsername(userId);
+        if (!sender.isPresent()) {
+            System.out.println("can not find user");
+            return;
+        }
+
+        if(!roomMemberMap.getOrDefault(roomId, new ArrayList<>()).contains(userId)) {
+            System.out.println("processFileUpload user is not Join");
+            return;
+        }
+
+        Date sendTime = new Date();
+        String sendTImeStr = DT.format(sendTime);
+
+        StringBuilder chatStr = new StringBuilder();
+        for(int i = 0 ; i < originFileNames.size(); i++) {
+            String originName = originFileNames.get(i);
+            String fileName = fileNames.get(i);
+
+            chatStr.append(String.format("%s|%s;", originName, fileName));
+        }
+
+        Chat chat = Chat.builder()
+                .roomInfo(chatRoom.get())
+                .sender(sender.get())
+                .sendTime(sendTime)
+                .chat(chatStr.toString())
+                .type("file")
+                .build();
+
+        long chatId = chatRepository.save(chat).getId();
+
+        JSONObject resultMsg = new JSONObject();
+        resultMsg.put("type", "file");
+        resultMsg.put("id", chatId);
+        resultMsg.put("roomId", roomId);
+        resultMsg.put("senderId", userId);
+        resultMsg.put("profile", "");
+        resultMsg.put("sender", sender.get().getNickname());
+        resultMsg.put("sendTime", sendTImeStr);
+        resultMsg.put("msg", chatStr);
+        TextMessage msg = new TextMessage(resultMsg.toString().getBytes());
+        broadCastMsg(roomId, msg);
+
     }
 
 

@@ -18,6 +18,9 @@ public class Chat {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
 
+    @Column(nullable = false, length = 10)
+    private String type;
+
     @ManyToOne
     @JoinColumn(name="room_id")
     private ChatRoom roomInfo;

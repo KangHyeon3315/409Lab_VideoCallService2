@@ -9,6 +9,7 @@ import java.util.Date;
 @RequiredArgsConstructor
 public class ChatInfo {
     private final long id;
+    private final String type;
     private final String senderId;
     private final String sender;
     private final String sendTime;

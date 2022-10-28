@@ -151,6 +151,10 @@
     flex: 1;
     width: calc(100% - 30px);
     text-align: start;
+
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
 }
 
 .MyChatMsg {
@@ -162,6 +166,11 @@
     flex: 1;
     width: calc(100% - 30px);
     text-align: end;
+
+    display: flex;
+    flex-direction: row-reverse;
+    flex-wrap: wrap;
+
 }
 
 .ChatFileUploadBtn {
@@ -195,4 +204,22 @@
 
 .FileCancel:hover {
     background-color: #44444422;
+}
+
+.FileLink {
+    width: fit-content;
+    
+    color: black;
+    background-color: #44444411;
+    padding: 5px;
+    padding-left: 15px;
+    padding-right: 15px;
+    margin: 5px;
+    border-radius: 15px;
+
+    text-decoration: none;
+}
+
+.FileLink:hover {
+    background-color: #44444444;
 }

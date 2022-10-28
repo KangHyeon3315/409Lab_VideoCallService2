@@ -144,7 +144,7 @@ public class ChatService {
         for (Chat chat : chatList) {
             User sender = chat.getSender();
 
-            ChatInfo info = new ChatInfo(chat.getId(), sender.getUsername(), sender.getNickname(), DatetimeFormatter.format(chat.getSendTime()), chat.getChat());
+            ChatInfo info = new ChatInfo(chat.getId(), chat.getType(), sender.getUsername(), sender.getNickname(), DatetimeFormatter.format(chat.getSendTime()), chat.getChat());
             chatInfoList.add(info);
         }
 

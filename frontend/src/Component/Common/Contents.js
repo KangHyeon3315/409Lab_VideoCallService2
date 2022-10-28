@@ -27,7 +27,7 @@ export default function Contents(props) {
     const [chatEnable, setChatEnable] = useState(false);    // Chat 화면 사용 여부
     const [memberEnable, setMemberEnable] = useState(false);    // Member 목록 화면 사용 여부
 
-    const [mode, setMode] = useState("VideoCall");          // 현재 화면의 Mode
+    const [mode, setMode] = useState(null);          // 현재 화면의 Mode
     const [roomTitle, setRoomTitle] = useState("Title")     // 현재 채팅방의 Title
 
     const [autoScroll, setAutoScroll] = useState(true);     // 채팅을 Auto Scroll 할지 여부
@@ -99,6 +99,7 @@ export default function Contents(props) {
         chatList.push(
             <ChatCell
                 key={data.id}
+                type={data.type}
                 myChat={data.senderId === userId}
                 profile={data.profile}
                 sender={data.sender}
@@ -298,7 +299,7 @@ export default function Contents(props) {
     const RecvData = useCallback((data) => {
         const type = data.type;
 
-        if (type === "Chat") {
+        if (type === "chat" || type === "file") {
             chatRecv(data);
         } else if (type === "Entered") {
             enteredRecv(data);
@@ -389,6 +390,7 @@ export default function Contents(props) {
                 chatList.push(
                     <ChatCell
                         key={chatInfo.id}
+                        type={chatInfo.type}
                         myChat={chatInfo.senderId === userId}
                         profile={chatInfo.profile}
                         sender={chatInfo.sender}
